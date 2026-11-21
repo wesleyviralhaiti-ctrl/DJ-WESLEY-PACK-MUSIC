@@ -10,6 +10,13 @@
   html {
     font-family: var(--font-sans);
     scroll-behavior: smooth;
+    background-color: #090A0D;
+    min-height: 100dvh;
+  }
+
+  body,
+  #root {
+    min-height: 100dvh;
   }
 
   h1, h2, h3, h4, .font-display {

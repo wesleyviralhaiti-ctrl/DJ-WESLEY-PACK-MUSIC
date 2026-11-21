@@ -7,6 +7,7 @@ import {
   formatZipFolderFilename,
   validateVipKeyCode,
 } from '../data/musicPacks';
+import { ZipFilenameText } from './ZipFilenameText';
 
 interface WelcomeVipModalProps {
   isOpen: boolean;
@@ -107,8 +108,8 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
                         <FolderArchive className="h-5 w-5 text-emerald-400 shrink-0" />
                       )}
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-zinc-100 truncate font-mono">
-                          {formatZipFolderFilename(pack)}
+                        <p className="text-sm font-semibold text-zinc-100 leading-snug font-mono">
+                          <ZipFilenameText filename={formatZipFolderFilename(pack)} />
                         </p>
                         <p
                           className={`text-xs mt-0.5 ${

@@ -1,3 +1,5 @@
+import customDefaultFoldersJson from './customDefaultFolders.json';
+
 export interface TrackItem {
   number: number;
   title: string;
@@ -11,6 +13,7 @@ export interface MusicPack {
   id: string;
   slug: string;
   title: string;
+  filename?: string;
   subtitle: string;
   genre: string;
   trackCount: number;
@@ -21,6 +24,8 @@ export interface MusicPack {
   tracks: TrackItem[];
   isCustomUpload?: boolean;
   isComingSoon?: boolean;
+  colorConfig?: FolderColorConfig;
+  cuesConfig?: FolderCuesConfig;
 }
 
 export type FolderColorMode = 'rainbow' | 'solid';
@@ -77,6 +82,10 @@ export function getFolderColorConfig(packId: string): FolderColorConfig {
   const all = loadAllFolderColorConfigs();
   if (all[packId]) {
     return all[packId];
+  }
+  const liveMatch = (customDefaultFoldersJson as MusicPack[]).find((p) => p.id === packId);
+  if (liveMatch?.colorConfig) {
+    return liveMatch.colorConfig;
   }
   const def = DEFAULT_SOLID_COLORS_BY_PACK[packId] ?? { mode: 'rainbow', hex: '#3B82F6' };
   return {
@@ -141,6 +150,10 @@ export function getFolderCuesConfig(packId: string): FolderCuesConfig {
   const all = loadAllFolderCuesConfigs();
   if (all[packId]) {
     return all[packId];
+  }
+  const liveMatch = (customDefaultFoldersJson as MusicPack[]).find((p) => p.id === packId);
+  if (liveMatch?.cuesConfig) {
+    return liveMatch.cuesConfig;
   }
   return {
     packId,
@@ -1125,12 +1138,24 @@ export function saveDeletedPackIds(ids: string[]): void {
   }
 }
 
+function getLiveDefaultCatalog(): MusicPack[] {
+  const parsed = Array.isArray(customDefaultFoldersJson)
+    ? (customDefaultFoldersJson as MusicPack[])
+    : [];
+  return parsed.length > 0 ? parsed : MUSIC_PACKS;
+}
+
+export function hasPermanentCustomDefaults(): boolean {
+  return Array.isArray(customDefaultFoldersJson) && customDefaultFoldersJson.length > 0;
+}
+
 export function deletePackById(packId: string): void {
   const custom = loadCustomPacks();
   if (custom.some((p) => p.id === packId)) {
     saveCustomPacks(custom.filter((p) => p.id !== packId));
   }
-  if (MUSIC_PACKS.some((p) => p.id === packId)) {
+  const baseCatalog = getLiveDefaultCatalog();
+  if (baseCatalog.some((p) => p.id === packId)) {
     const deleted = loadDeletedPackIds();
     if (!deleted.includes(packId)) {
       saveDeletedPackIds([...deleted, packId]);
@@ -1142,11 +1167,20 @@ export function restoreDemoPacks(): void {
   saveDeletedPackIds([]);
 }
 
+export function hideBuiltInDemoPacks(): void {
+  const deleted = new Set(loadDeletedPackIds());
+  for (const p of MUSIC_PACKS) {
+    deleted.add(p.id);
+  }
+  saveDeletedPackIds(Array.from(deleted));
+}
+
 export function getAllMusicPacks(): MusicPack[] {
   const deletedSet = new Set(loadDeletedPackIds());
   const customPacks = loadCustomPacks().filter((p) => !deletedSet.has(p.id));
   const customIds = new Set(customPacks.map((p) => p.id));
-  const builtIn = MUSIC_PACKS.filter(
+  const baseCatalog = getLiveDefaultCatalog();
+  const builtIn = baseCatalog.filter(
     (p) => !deletedSet.has(p.id) && !customIds.has(p.id)
   );
   return [...customPacks, ...builtIn];
@@ -1160,6 +1194,59 @@ export function formatZipFolderFilename(pack: MusicPack): string {
     .replace(/\s+/g, '_')
     .replace(/_+/g, '_');
   return `${cleaned || pack.slug}.zip`;
+}
+
+export interface ExportFoldersResult {
+  json: string;
+  count: number;
+  ownerFolderCount: number;
+  totalVisibleCount: number;
+  usingOwnerOnly: boolean;
+}
+
+export function exportCurrentFoldersJson(options?: {
+  includeBuiltInDemos?: boolean;
+}): ExportFoldersResult {
+  const deletedSet = new Set(loadDeletedPackIds());
+  const customPacks = loadCustomPacks().filter((p) => !deletedSet.has(p.id));
+  const visibleAll = getAllMusicPacks();
+  const hasOwnerFolders = customPacks.length > 0;
+  const hasPermanent = hasPermanentCustomDefaults();
+  const includeDemos = Boolean(options?.includeBuiltInDemos);
+
+  const selectedPacks =
+    !hasPermanent && hasOwnerFolders && !includeDemos ? customPacks : visibleAll;
+
+  const exportPayload = selectedPacks.map((pack) => {
+    const colorCfg = getFolderColorConfig(pack.id);
+    const cuesCfg = getFolderCuesConfig(pack.id);
+    return {
+      id: pack.id,
+      slug: pack.slug,
+      title: pack.title,
+      filename: formatZipFolderFilename(pack),
+      subtitle: pack.subtitle,
+      genre: pack.genre,
+      trackCount: pack.trackCount,
+      fileSize: pack.fileSize,
+      bitrate: pack.bitrate,
+      bpmRange: pack.bpmRange,
+      coverImage: pack.coverImage,
+      isComingSoon: Boolean(pack.isComingSoon),
+      isCustomUpload: true,
+      tracks: pack.tracks,
+      colorConfig: colorCfg,
+      ...(Object.keys(cuesCfg.tracks || {}).length > 0 ? { cuesConfig: cuesCfg } : {}),
+    };
+  });
+
+  return {
+    json: JSON.stringify(exportPayload, null, 2),
+    count: exportPayload.length,
+    ownerFolderCount: customPacks.length,
+    totalVisibleCount: visibleAll.length,
+    usingOwnerOnly: hasOwnerFolders && !includeDemos,
+  };
 }
 
 export const COMING_SOON_GENRE_PRESETS = [

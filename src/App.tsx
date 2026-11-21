@@ -27,6 +27,8 @@ import { buildVirtualDjColorZip } from './utils/id3Mp3Packager';
 import { WelcomeVipModal } from './components/WelcomeVipModal';
 import { AdminPanelModal } from './components/AdminPanelModal';
 import { QuotaExhaustedModal } from './components/QuotaExhaustedModal';
+import { ZipFilenameText } from './components/ZipFilenameText';
+import { PWAInstallButton } from './components/PWAInstallButton';
 
 const ADMIN_SESSION_STORAGE_KEY = 'wesley_admin_auth_session_v1';
 
@@ -239,9 +241,9 @@ export default function App() {
   const isUnlockedForDownload = Boolean((isAdminAuthenticated && isAdminFreeMode) || hasRemainingCredits);
 
   return (
-    <div className="min-h-screen bg-[#0B0C10] text-zinc-100 flex flex-col">
+    <div className="min-h-[100dvh] pb-[env(safe-area-inset-bottom)] bg-[#0B0C10] text-zinc-100 flex flex-col">
       {/* Top Bar Contract: 3 clean zones separated by gap-8 */}
-      <header className="sticky top-0 z-30 border-b border-zinc-800/80 bg-[#0B0C10]/90 backdrop-blur-md">
+      <header className="sticky top-0 z-30 pt-[env(safe-area-inset-top)] border-b border-zinc-800/80 bg-[#0B0C10]/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-8 px-4 sm:px-6 h-16">
           {/* Zone 1: Brand wordmark */}
           <a
@@ -461,6 +463,7 @@ export default function App() {
                       </a>
                     </>
                   )}
+                  <PWAInstallButton variant="hero" />
                 </div>
               </div>
 
@@ -558,9 +561,9 @@ export default function App() {
                           </div>
                         )}
 
-                        {/* Exact .ZIP Folder Name */}
-                        <h3 className="mt-4 font-mono text-base sm:text-lg font-bold text-white tracking-tight break-words">
-                          {zipFilename}
+                        {/* Exact .ZIP Folder Name (clean 1-2 line wrapping on iPhone without splitting .zip) */}
+                        <h3 className="mt-4 font-mono text-[15px] sm:text-lg leading-snug font-bold text-white tracking-tight">
+                          <ZipFilenameText filename={zipFilename} />
                         </h3>
 
                         {/* Track Count & .ZIP Label */}
@@ -698,6 +701,7 @@ export default function App() {
             >
               WhatsApp Admin (+509 38569265)
             </a>
+            <PWAInstallButton variant="footer" />
           </div>
         </div>
       </footer>

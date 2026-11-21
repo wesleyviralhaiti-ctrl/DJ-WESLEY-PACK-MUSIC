@@ -29,6 +29,7 @@ import {
 import {
   COMING_SOON_GENRE_PRESETS,
   DJ_RAINBOW_COLORS,
+  ExportFoldersResult,
   FOLDER_PLANS,
   FolderColorConfig,
   FolderCuesConfig,
@@ -41,11 +42,14 @@ import {
   createComingSoonPack,
   createVipKeyRecord,
   deletePackById,
+  exportCurrentFoldersJson,
   formatZipFolderFilename,
   generateShortSecretCode,
   getFolderColorConfig,
   getFolderCuesConfig,
   getVipKeyStatus,
+  hasPermanentCustomDefaults,
+  hideBuiltInDemoPacks,
   loadAllVipKeys,
   loadDeletedPackIds,
   renameCustomPack,
@@ -58,6 +62,7 @@ import {
   slugifyPackTitle,
   upsertCustomPack,
 } from '../data/musicPacks';
+import { ZipFilenameText } from './ZipFilenameText';
 import {
   analyzeMp3FileForHotCues,
   clearUploadedMp3sForPack,
@@ -125,6 +130,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [importedPackId, setImportedPackId] = useState<string | null>(null);
   const [importedPackNameInput, setImportedPackNameInput] = useState<string>('');
   const [activatingPackId, setActivatingPackId] = useState<string | null>(null);
+  const [exportedFoldersResult, setExportedFoldersResult] = useState<ExportFoldersResult | null>(null);
+  const [exportIncludeBuiltIn, setExportIncludeBuiltIn] = useState<boolean>(false);
+  const [exportCopiedBanner, setExportCopiedBanner] = useState<boolean>(false);
   const folderInputRef = useRef<HTMLInputElement | null>(null);
   const activatePackInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -143,20 +151,20 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   // VirtualDJ Folder Color & Hot Cues state
   const [selectedPackId, setSelectedPackId] = useState<string>(
-    () => allPacks[0]?.id || 'konpa-gouyad-vip-2026'
+    () => allPacks[0]?.id || 'coming-reggae-dancehall-mwps5k9t'
   );
   const [draftColorConfig, setDraftColorConfig] = useState<FolderColorConfig>(() =>
-    getFolderColorConfig(allPacks[0]?.id || 'konpa-gouyad-vip-2026')
+    getFolderColorConfig(allPacks[0]?.id || 'coming-reggae-dancehall-mwps5k9t')
   );
   const [draftCuesConfig, setDraftCuesConfig] = useState<FolderCuesConfig>(() =>
-    getFolderCuesConfig(allPacks[0]?.id || 'konpa-gouyad-vip-2026')
+    getFolderCuesConfig(allPacks[0]?.id || 'coming-reggae-dancehall-mwps5k9t')
   );
   const [startSlotNumber, setStartSlotNumber] = useState<number>(1);
   const [scanStatus, setScanStatus] = useState<string | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [uploadedCount, setUploadedCount] = useState<number>(() =>
-    countUploadedMp3sForPack(allPacks[0]?.id || 'konpa-gouyad-vip-2026')
+    countUploadedMp3sForPack(allPacks[0]?.id || 'coming-reggae-dancehall-mwps5k9t')
   );
   const [playingCueKey, setPlayingCueKey] = useState<string | null>(null);
   const [trackSearch, setTrackSearch] = useState<string>('');
@@ -587,6 +595,43 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     restoreDemoPacks();
     onCustomPacksChanged();
     onColorsChanged();
+  };
+
+  const copyPlainText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+  };
+
+  const handleExportFoldersCode = async (includeDemosOverride?: boolean) => {
+    const includeBuiltInDemos =
+      includeDemosOverride !== undefined ? includeDemosOverride : exportIncludeBuiltIn;
+    const res = exportCurrentFoldersJson({ includeBuiltInDemos });
+    setExportedFoldersResult(res);
+    await copyPlainText(res.json);
+    setExportCopiedBanner(true);
+    window.setTimeout(() => {
+      setExportCopiedBanner(false);
+    }, 3500);
+  };
+
+  const handleHideOldDemoPacks = () => {
+    hideBuiltInDemoPacks();
+    onCustomPacksChanged();
+    onColorsChanged();
+    if (exportedFoldersResult) {
+      const res = exportCurrentFoldersJson({ includeBuiltInDemos: exportIncludeBuiltIn });
+      setExportedFoldersResult(res);
+    }
   };
 
   const handleSelectPackForStudio = (packId: string) => {
@@ -1234,25 +1279,134 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               {activeTab === 'packs' ? (
                 /* 📁 Jere Pake Mizik Yo — Activate Coming Soon Folders + Free Admin Test Download + Delete */
                 <div className="space-y-4">
-                  <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <h3 className="font-display text-base font-bold text-emerald-300">
-                        👑 Jere Folder .ZIP yo — Telechaje Gratis, Aktive oswa Siprime nenpòt Folder
-                      </h3>
-                      <p className="text-xs text-zinc-300 mt-1">
-                        Teste nenpòt folder .ZIP gratis, ajoute mizik sou yon folder « An
-                        Preparasyon » pou w aktive l, oswa efase nenpòt pake.
-                      </p>
+                  <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 space-y-3">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-display text-base font-bold text-emerald-300">
+                          👑 Jere Folder .ZIP yo — Telechaje Gratis, Aktive oswa Siprime nenpòt
+                          Folder
+                        </h3>
+                        <p className="text-xs text-zinc-300 mt-1">
+                          Teste nenpòt folder .ZIP gratis, ajoute mizik sou yon folder « An
+                          Preparasyon » pou w aktive l, oswa kopye kòd folder ou yo pou mete sou
+                          entènèt.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => void handleExportFoldersCode()}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-extrabold whitespace-nowrap transition-colors cursor-pointer"
+                        >
+                          {exportCopiedBanner ? (
+                            <Check className="h-3.5 w-3.5 shrink-0" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5 shrink-0" />
+                          )}
+                          <span>📋 Kopye Kòd Tout Folder Mwen Yo (Pou Met Sou Entènèt)</span>
+                        </button>
+                        {loadDeletedPackIds().length > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleRestoreDemoPacks}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#0B0C10] border border-zinc-700 hover:border-emerald-500 text-xs font-semibold text-zinc-200 whitespace-nowrap shrink-0 cursor-pointer"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5 text-emerald-400" />
+                            <span>
+                              {hasPermanentCustomDefaults()
+                                ? `Reyajiste Folder Ofisyèl yo (${loadDeletedPackIds().length})`
+                                : `Reyajiste Demo yo (${loadDeletedPackIds().length})`}
+                            </span>
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    {loadDeletedPackIds().length > 0 && (
-                      <button
-                        type="button"
-                        onClick={handleRestoreDemoPacks}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#0B0C10] border border-zinc-700 hover:border-emerald-500 text-xs font-semibold text-zinc-200 whitespace-nowrap shrink-0 cursor-pointer"
-                      >
-                        <RotateCcw className="h-3.5 w-3.5 text-emerald-400" />
-                        <span>Reyajiste Demo yo ({loadDeletedPackIds().length})</span>
-                      </button>
+
+                    {exportedFoldersResult && (
+                      <div className="rounded-xl bg-[#090A0D] border border-emerald-500/40 p-4 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
+                            <CheckCircle2 className="h-4 w-4 shrink-0" />
+                            <span>
+                              Kòd JSON pou {exportedFoldersResult.count} Folder kopye nan prespapye
+                              ou!
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => void handleExportFoldersCode()}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/40 hover:bg-emerald-500/25 text-xs font-semibold text-emerald-200 cursor-pointer"
+                            >
+                              <Copy className="h-3 w-3" />
+                              <span>{exportCopiedBanner ? 'Kopye!' : 'Kopye Ankò'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setExportedFoldersResult(null)}
+                              className="px-2.5 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-white cursor-pointer"
+                            >
+                              Fèmen
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-zinc-300 leading-relaxed">
+                          <strong className="text-white">Kòman pou w mete l pèmanan:</strong> Kòd
+                          JSON sa a gen tout vrè folder pa w yo ak tout emoji yo (
+                          <span className="font-mono text-emerald-300">
+                            RABODAY_VIBE_👯‍♂️🥶🥵.zip
+                          </span>
+                          , elatriye). Kole l nan chat AI Studio a (oswa dirèkteman nan fichye{' '}
+                          <span className="font-mono text-zinc-200">
+                            src/data/customDefaultFolders.json
+                          </span>
+                          ) pou mete tout nouvo folder ou yo ofisyèl pou tout vizitè sou iPhone ak
+                          Android!
+                        </p>
+
+                        {!hasPermanentCustomDefaults() &&
+                          exportedFoldersResult.ownerFolderCount > 0 && (
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                            <label className="inline-flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={exportIncludeBuiltIn}
+                                onChange={(e) => {
+                                  const next = e.target.checked;
+                                  setExportIncludeBuiltIn(next);
+                                  void handleExportFoldersCode(next);
+                                }}
+                                className="rounded border-zinc-600 bg-[#0B0C10] text-emerald-500 focus:ring-emerald-500"
+                              />
+                              <span>
+                                Mete ansyen folder demo yo tou ({exportedFoldersResult.ownerFolderCount}{' '}
+                                vrè folder pa m yo sèlman lè l pa tcheke)
+                              </span>
+                            </label>
+
+                            {exportedFoldersResult.totalVisibleCount >
+                              exportedFoldersResult.ownerFolderCount && (
+                              <button
+                                type="button"
+                                onClick={handleHideOldDemoPacks}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-[11px] font-semibold text-amber-200 cursor-pointer"
+                              >
+                                <span>🧹 Kache Ansyen Demo Yo Sou Laptop La</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        <textarea
+                          readOnly
+                          value={exportedFoldersResult.json}
+                          onFocus={(e) => e.currentTarget.select()}
+                          rows={6}
+                          aria-label="JSON tout folder ou yo"
+                          className="w-full rounded-lg bg-[#0B0C10] border border-zinc-800 p-3 font-mono text-[11px] text-emerald-200 focus:border-emerald-500 focus:outline-none"
+                        />
+                      </div>
                     )}
                   </div>
 
@@ -1262,7 +1416,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         Pa gen okenn folder .ZIP aktif kounye a.
                       </p>
                       <p className="text-xs text-zinc-400">
-                        Chwazi yon folder mizik sou laptop ou anlè a oswa reyajiste pake demo yo.
+                        Chwazi yon folder mizik sou laptop ou anlè a oswa reyajiste folder ofisyèl yo.
                       </p>
                       {loadDeletedPackIds().length > 0 && (
                         <button
@@ -1271,7 +1425,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white cursor-pointer"
                         >
                           <RotateCcw className="h-3.5 w-3.5 text-emerald-400" />
-                          <span>Reyajiste Pake Demo yo</span>
+                          <span>
+                            {hasPermanentCustomDefaults()
+                              ? 'Reyajiste Folder Ofisyèl yo'
+                              : 'Reyajiste Pake Demo yo'}
+                          </span>
                         </button>
                       )}
                     </div>
@@ -1319,8 +1477,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                     {pack.genre} · {pack.trackCount} Mizik an Lòd • .ZIP
                                   </p>
                                 )}
-                                <h4 className="font-mono text-sm font-bold text-white truncate mt-0.5">
-                                  {formatZipFolderFilename(pack)}
+                                <h4 className="font-mono text-sm leading-snug font-bold text-white mt-0.5">
+                                  <ZipFilenameText filename={formatZipFolderFilename(pack)} />
                                 </h4>
                                 <p className="text-[11px] text-zinc-400 mt-1 tabular-nums">
                                   {isComingSoon
