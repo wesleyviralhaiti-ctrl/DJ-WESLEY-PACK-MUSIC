@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Download,
   Lock,
@@ -29,10 +29,11 @@ import { AdminPanelModal } from './components/AdminPanelModal';
 import { QuotaExhaustedModal } from './components/QuotaExhaustedModal';
 import { ZipFilenameText } from './components/ZipFilenameText';
 import { PWAInstallButton } from './components/PWAInstallButton';
-import { StickyBannerAd, NativeSponsorCard, SponsorAdModal } from './components/AdSlots';
-import { loadAdConfig, sanitizeHttpUrl } from './data/adConfig';
+import { StickyBannerAd, NativeSponsorCard, InterstitialAdModal } from './components/AdSlots';
+import { loadAdConfig } from './data/adConfig';
 
 const ADMIN_SESSION_STORAGE_KEY = 'wesley_admin_auth_session_v1';
+const INTERSTITIAL_AD_SESSION_KEY = 'wesley_interstitial_ad_shown_v1';
 
 function loadActiveKeyRecord(): VipKeyRecord | null {
   try {
@@ -76,8 +77,7 @@ export default function App() {
   const [customPacksVersion, setCustomPacksVersion] = useState<number>(0);
   const [adConfigVersion, setAdConfigVersion] = useState<number>(0);
   const [isStickyBannerDismissed, setIsStickyBannerDismissed] = useState<boolean>(false);
-  const [isSponsorModalOpen, setIsSponsorModalOpen] = useState<boolean>(false);
-  const [sponsorTargetPack, setSponsorTargetPack] = useState<MusicPack | null>(null);
+  const [isInterstitialOpen, setIsInterstitialOpen] = useState<boolean>(false);
   const [packagingPackId, setPackagingPackId] = useState<string | null>(null);
 
   const adConfig = useMemo(() => {
@@ -122,8 +122,7 @@ export default function App() {
     (record: VipKeyRecord) => {
       window.localStorage.setItem(ACTIVE_KEY_STORAGE_KEY, record.code);
       setActiveKey(record);
-      setIsSponsorModalOpen(false);
-      setSponsorTargetPack(null);
+      setIsInterstitialOpen(false);
       showToast(
         `Aksè VIP debloke! Kredi Folder: ${record.remainingFolders} / ${record.totalFolders} Folder`
       );
@@ -254,6 +253,33 @@ export default function App() {
   const isUnlockedForDownload = Boolean((isAdminAuthenticated && isAdminFreeMode) || hasRemainingCredits);
   const shouldShowAds = adConfig.enabled && !isUnlockedForDownload;
   const shouldShowStickyBanner = shouldShowAds && !isStickyBannerDismissed;
+
+  // Automatically show VidMate-style 4-second interstitial popup 1.5s after non-VIP visitor lands (once per session)
+  useEffect(() => {
+    if (!shouldShowAds || !adConfig.enableSponsorPopup) {
+      setIsInterstitialOpen(false);
+      return;
+    }
+
+    try {
+      if (window.sessionStorage.getItem(INTERSTITIAL_AD_SESSION_KEY) === 'true') {
+        return;
+      }
+    } catch {
+      // ignore storage errors
+    }
+
+    const timer = window.setTimeout(() => {
+      try {
+        window.sessionStorage.setItem(INTERSTITIAL_AD_SESSION_KEY, 'true');
+      } catch {
+        // ignore storage errors
+      }
+      setIsInterstitialOpen(true);
+    }, 1500);
+
+    return () => window.clearTimeout(timer);
+  }, [shouldShowAds, adConfig.enableSponsorPopup]);
 
   return (
     <div className="min-h-[100dvh] pb-[env(safe-area-inset-bottom)] bg-[#0B0C10] text-zinc-100 flex flex-col">
@@ -621,10 +647,6 @@ export default function App() {
                             onClick={() => {
                               if (activeKey && (activeKey.burned || activeKey.remainingFolders <= 0)) {
                                 handleExhaustedAttempt(activeKey.code);
-                              } else if (shouldShowAds && adConfig.enableSponsorPopup) {
-                                setPendingPack(pack);
-                                setSponsorTargetPack(pack);
-                                setIsSponsorModalOpen(true);
                               } else {
                                 setPendingPack(pack);
                                 setIsWelcomeOpen(true);
@@ -748,13 +770,6 @@ export default function App() {
         allPacks={allPacks}
         activeKey={activeKey}
         pendingPack={pendingPack}
-        showSponsorTrigger={shouldShowAds}
-        sponsorDirectLink={sanitizeHttpUrl(adConfig.smartLinkUrl)}
-        onTriggerSponsorAd={() => {
-          setIsWelcomeOpen(false);
-          setSponsorTargetPack(pendingPack);
-          setIsSponsorModalOpen(true);
-        }}
         onUnlock={handleUnlock}
         onUnlockOrDownloadPack={(pack) => void handleUnlockOrDownloadPack(pack)}
         onBrowsePacks={() => {
@@ -763,20 +778,11 @@ export default function App() {
         }}
       />
 
-      {/* Optional VidMate-Style Sponsor Ad Gate before VIP Unlock */}
-      <SponsorAdModal
-        isOpen={isSponsorModalOpen && shouldShowAds}
+      {/* Automatic 4-Second VidMate-Style Interstitial Ad Overlay (1.5s after landing, once per session) */}
+      <InterstitialAdModal
+        isOpen={isInterstitialOpen && shouldShowAds}
         adConfig={adConfig}
-        targetPack={sponsorTargetPack}
-        onClose={() => {
-          setIsSponsorModalOpen(false);
-          setSponsorTargetPack(null);
-        }}
-        onProceedToVipKey={() => {
-          setIsSponsorModalOpen(false);
-          setPendingPack(sponsorTargetPack);
-          setIsWelcomeOpen(true);
-        }}
+        onClose={() => setIsInterstitialOpen(false)}
       />
 
       {/* Quota Exhausted Renewal Modal (when 0 / Y folders remain) */}

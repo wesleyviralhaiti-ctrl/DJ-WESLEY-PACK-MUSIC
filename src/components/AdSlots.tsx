@@ -1,23 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import {
   ExternalLink,
-  Film,
+  Flame,
   KeyRound,
-  MessageCircle,
   Sparkles,
   Volume2,
   X,
-  CheckCircle2,
+  Clock,
 } from 'lucide-react';
 import {
   AdSystemConfig,
+  DEFAULT_HILLTOP_DIRECT_LINK,
   DEFAULT_PROMO_HEADLINE,
   DEFAULT_PROMO_SUBTEXT,
   buildSandboxedAdSrcDoc,
   sanitizeHttpUrl,
 } from '../data/adConfig';
-import { MusicPack, WHATSAPP_BASE_URL, formatZipFolderFilename } from '../data/musicPacks';
-import { ZipFilenameText } from './ZipFilenameText';
+import { WHATSAPP_BASE_URL } from '../data/musicPacks';
 
 interface SandboxedAdFrameProps {
   htmlSnippet: string;
@@ -198,48 +197,36 @@ export const NativeSponsorCard: React.FC<NativeSponsorCardProps> = ({
   );
 };
 
-interface SponsorAdModalProps {
+interface InterstitialAdModalProps {
   isOpen: boolean;
   adConfig: AdSystemConfig;
-  targetPack: MusicPack | null;
   onClose: () => void;
-  onProceedToVipKey: () => void;
 }
 
-export const SponsorAdModal: React.FC<SponsorAdModalProps> = ({
+export const InterstitialAdModal: React.FC<InterstitialAdModalProps> = ({
   isOpen,
   adConfig,
-  targetPack,
   onClose,
-  onProceedToVipKey,
 }) => {
-  const [watchedSponsor, setWatchedSponsor] = useState(false);
-  const [countdown, setCountdown] = useState<number | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState<number>(4);
 
   useEffect(() => {
-    if (!isOpen) {
-      setWatchedSponsor(false);
-      setCountdown(null);
+    if (isOpen) {
+      setSecondsLeft(4);
     }
   }, [isOpen]);
 
   useEffect(() => {
-    if (countdown === null || countdown <= 0) return;
+    if (!isOpen || secondsLeft <= 0) return;
     const timer = window.setTimeout(() => {
-      setCountdown((prev) => {
-        if (prev === null || prev <= 1) {
-          setWatchedSponsor(true);
-          return 0;
-        }
-        return prev - 1;
-      });
+      setSecondsLeft((prev) => Math.max(0, prev - 1));
     }, 1000);
     return () => window.clearTimeout(timer);
-  }, [countdown]);
+  }, [isOpen, secondsLeft]);
 
   if (!isOpen) return null;
 
-  const safeSmartLink = sanitizeHttpUrl(adConfig.smartLinkUrl);
+  const safeSmartLink = sanitizeHttpUrl(adConfig.smartLinkUrl) ?? DEFAULT_HILLTOP_DIRECT_LINK;
   const hasCustomBanner = adConfig.bannerAdHtml.trim().length > 0;
   const hasCustomNative = adConfig.nativeAdHtml.trim().length > 0;
   const modalCreativeHtml = hasCustomNative
@@ -247,137 +234,110 @@ export const SponsorAdModal: React.FC<SponsorAdModalProps> = ({
     : hasCustomBanner
       ? adConfig.bannerAdHtml
       : '';
+  const canClose = secondsLeft <= 0;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 overflow-y-auto"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="sponsor-modal-heading"
+      aria-labelledby="interstitial-ad-heading"
     >
-      <div className="relative w-full max-w-lg rounded-2xl bg-[#13151B] border border-amber-500/40 shadow-2xl p-6 sm:p-7 my-auto space-y-5">
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Fèmen fenèt sponsor an"
-          className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors cursor-pointer"
-        >
-          <X className="h-5 w-5" />
-        </button>
+      <div className="relative w-full max-w-lg rounded-2xl bg-[#13151B] border border-emerald-500/45 shadow-[0_0_50px_rgba(16,185,129,0.18)] p-5 sm:p-7 my-auto space-y-5">
+        {/* Top Bar: Sponsor Badge + Top-Right Countdown / Close Button */}
+        <div className="flex items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/45 bg-amber-500/15 px-3 py-1.5 text-[11px] font-mono font-extrabold tracking-wider text-amber-300 uppercase">
+            📢 ANONS SPONSOR (WESLEY MUSIC)
+          </span>
 
-        <div className="pr-8">
-          <div className="inline-flex items-center gap-1.5 rounded-md border border-amber-400/40 bg-amber-500/15 px-2.5 py-1 text-[10px] font-mono font-bold tracking-widest text-amber-300 uppercase mb-2.5">
-            <span>🎬 SPONSOR / ANONS VIDMATE</span>
-          </div>
-          <h2
-            id="sponsor-modal-heading"
-            className="font-display text-xl sm:text-2xl font-bold text-white tracking-tight"
-          >
-            Sipòte Wesley Music oswa Debloke ak Kle VIP
-          </h2>
-          {targetPack && (
-            <p className="mt-1.5 text-xs sm:text-sm text-zinc-400">
-              Folder chwazi:{' '}
-              <span className="font-mono text-emerald-300 font-semibold">
-                <ZipFilenameText filename={formatZipFolderFilename(targetPack)} />
-              </span>
-            </p>
-          )}
-        </div>
-
-        {/* Embedded Sponsor Preview / Default Promo Box */}
-        <div className="rounded-xl border border-zinc-800 bg-[#0B0C10] p-4 space-y-3">
-          {modalCreativeHtml ? (
-            <div className="overflow-hidden rounded-lg border border-zinc-800">
-              <SandboxedAdFrame
-                htmlSnippet={modalCreativeHtml}
-                title="Anons Sponsor Popup"
-                className="w-full h-[140px]"
-              />
-            </div>
-          ) : (
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-emerald-300">
-                <Volume2 className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white">{DEFAULT_PROMO_HEADLINE}</p>
-                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                  {DEFAULT_PROMO_SUBTEXT}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {countdown !== null && countdown > 0 && (
-            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs font-semibold text-amber-200 text-center tabular-nums">
-              ⏳ Ap li ti anons sponsor an... ({countdown}s)
-            </div>
-          )}
-
-          {watchedSponsor && (
-            <div className="rounded-lg bg-emerald-500/15 border border-emerald-500/35 px-3 py-2 text-xs font-semibold text-emerald-300 flex items-center justify-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              <span>Mèsi paske w gade ti anons sponsor an! Antre Kle VIP ou a pou w telechaje.</span>
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {safeSmartLink ? (
-              <a
-                href={safeSmartLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setWatchedSponsor(true)}
-                className="inline-flex items-center justify-center gap-1.5 min-h-[48px] px-3.5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-display font-extrabold text-xs sm:text-sm text-center leading-tight transition-colors"
-              >
-                <Film className="h-4 w-4 shrink-0" />
-                <span>🎬 Koute / Gade Sponsor Pou Sipòte Sit la</span>
-                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-              </a>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  if (!watchedSponsor && countdown === null) {
-                    setCountdown(4);
-                  }
-                }}
-                className="inline-flex items-center justify-center gap-1.5 min-h-[48px] px-3.5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-display font-extrabold text-xs sm:text-sm text-center leading-tight transition-colors cursor-pointer"
-              >
-                <Film className="h-4 w-4 shrink-0" />
-                <span>
-                  {countdown !== null && countdown > 0
-                    ? `🎬 Ap Gade (${countdown}s)...`
-                    : watchedSponsor
-                      ? '✅ Anons Gade!'
-                      : '🎬 Koute / Gade Sponsor Pou Sipòte Sit la'}
-                </span>
-              </button>
-            )}
-
-            <a
-              href={WHATSAPP_BASE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-1.5 min-h-[48px] px-3.5 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-zinc-950 font-display font-extrabold text-xs sm:text-sm text-center leading-tight transition-colors"
+          {canClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 px-3 py-1.5 text-xs font-extrabold text-zinc-950 transition-colors cursor-pointer whitespace-nowrap"
             >
-              <MessageCircle className="h-4 w-4 shrink-0" />
-              <span>📲 Mande Kle VIP sou WhatsApp (+509 38569265)</span>
-            </a>
+              <span>✖ Fèmen Anons la &amp; Kontinye</span>
+            </button>
+          ) : (
+            <span
+              aria-live="polite"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-[#0B0C10] px-3 py-1.5 text-xs font-mono font-bold text-amber-300 tabular-nums whitespace-nowrap"
+            >
+              <Clock className="h-3.5 w-3.5 shrink-0 animate-spin" />
+              <span>⏳ Tann {secondsLeft} segonn...</span>
+            </span>
+          )}
+        </div>
+
+        {/* Optional Custom Adsterra/Monetag Script Frame if pasted in Admin */}
+        {modalCreativeHtml && (
+          <div className="overflow-hidden rounded-xl border border-zinc-800 bg-[#0B0C10]">
+            <SandboxedAdFrame
+              htmlSnippet={modalCreativeHtml}
+              title="Anons Sponsor Live"
+              className="w-full h-[120px]"
+            />
+          </div>
+        )}
+
+        {/* Rich Clickable Interactive Sponsor Banner Card (Entire Card Opens HilltopAds DirectLink) */}
+        <a
+          href={safeSmartLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group block rounded-2xl border border-emerald-500/45 bg-gradient-to-br from-emerald-500/15 via-[#0B0C10] to-amber-500/15 hover:border-emerald-400 p-5 sm:p-6 transition-all duration-200 hover:-translate-y-0.5 shadow-[0_0_30px_rgba(16,185,129,0.12)]"
+        >
+          <div className="flex items-start gap-3.5">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-300">
+              <Volume2 className="h-6 w-6" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-mono font-bold uppercase tracking-widest text-emerald-400 mb-1">
+                OFRI ESPESYAL SPONSOR • KLIKE LA
+              </p>
+              <h2
+                id="interstitial-ad-heading"
+                className="font-display text-lg sm:text-xl font-extrabold text-white leading-snug group-hover:text-emerald-200 transition-colors"
+              >
+                {DEFAULT_PROMO_HEADLINE}
+              </h2>
+              <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                {DEFAULT_PROMO_SUBTEXT} Sipòte Wesley Music pou tout folder .ZIP yo rete aktif!
+              </p>
+            </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onProceedToVipKey}
-            className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-display font-extrabold text-sm whitespace-nowrap transition-colors cursor-pointer"
-          >
-            <KeyRound className="h-4 w-4 shrink-0" />
-            <span>🔑 Mwen Gen Kle VIP — Debloke San Anons</span>
-          </button>
+          <div className="mt-5">
+            <span className="w-full inline-flex items-center justify-center gap-2 min-h-[50px] px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-400 via-emerald-500 to-amber-400 group-hover:brightness-110 text-zinc-950 font-display font-extrabold text-sm sm:text-base shadow-[0_0_24px_rgba(16,185,129,0.45)] transition-all">
+              <Flame className="h-5 w-5 shrink-0" />
+              <span>🔥 OUVRI OFRI SPONSOR LA KOUNYE A</span>
+              <ExternalLink className="h-4 w-4 shrink-0" />
+            </span>
+          </div>
+        </a>
+
+        {/* Bottom 4-Second Countdown / Unlockable Close & Continue Button */}
+        <div className="pt-1">
+          {canClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] px-5 py-3 rounded-xl bg-zinc-100 hover:bg-white text-zinc-950 font-display font-extrabold text-sm transition-colors cursor-pointer shadow-lg"
+            >
+              <span>✖ Fèmen Anons la &amp; Kontinye</span>
+            </button>
+          ) : (
+            <div
+              aria-live="polite"
+              className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] px-5 py-3 rounded-xl bg-[#0B0C10] border border-zinc-800 text-amber-300 font-mono font-bold text-sm tabular-nums cursor-wait"
+            >
+              <Clock className="h-4 w-4 shrink-0" />
+              <span>⏳ Tann {secondsLeft} segonn...</span>
+            </div>
+          )}
+          <p className="mt-2 text-center text-[11px] text-zinc-500">
+            Kliyan ki deja gen Kle VIP pa janm wè anons sa a.
+          </p>
         </div>
       </div>
     </div>

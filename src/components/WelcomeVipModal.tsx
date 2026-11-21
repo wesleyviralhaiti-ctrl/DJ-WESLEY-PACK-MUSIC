@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Download, AlertCircle, FolderArchive, Clock, Film } from 'lucide-react';
+import { X, CheckCircle2, Download, AlertCircle, FolderArchive, Clock } from 'lucide-react';
 import {
   MusicPack,
   VipKeyRecord,
@@ -14,9 +14,6 @@ interface WelcomeVipModalProps {
   allPacks: MusicPack[];
   activeKey: VipKeyRecord | null;
   pendingPack: MusicPack | null;
-  showSponsorTrigger?: boolean;
-  sponsorDirectLink?: string | null;
-  onTriggerSponsorAd?: () => void;
   onUnlock: (record: VipKeyRecord) => void;
   onUnlockOrDownloadPack: (pack: MusicPack) => void;
   onBrowsePacks: () => void;
@@ -27,9 +24,6 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
   allPacks,
   activeKey,
   pendingPack,
-  showSponsorTrigger = false,
-  sponsorDirectLink = null,
-  onTriggerSponsorAd,
   onUnlock,
   onUnlockOrDownloadPack,
   onBrowsePacks,
@@ -241,44 +235,14 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
                 3 Folder, 5 Folder, oswa 10 Folder)!
               </p>
 
-              <div
-                className={`grid gap-2.5 ${
-                  showSponsorTrigger ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'
-                }`}
+              <a
+                href={WHATSAPP_BASE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full min-h-[52px] items-center justify-center rounded-xl bg-[#25D366] hover:bg-[#20BD5A] active:bg-[#1DA851] text-zinc-950 font-display font-bold text-sm sm:text-base px-5 py-3.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366]"
               >
-                <a
-                  href={WHATSAPP_BASE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex w-full min-h-[52px] items-center justify-center rounded-xl bg-[#25D366] hover:bg-[#20BD5A] active:bg-[#1DA851] text-zinc-950 font-display font-bold text-xs sm:text-sm text-center leading-tight px-3.5 py-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366]"
-                >
-                  📲 Mande Kle VIP sou WhatsApp (+509 38569265)
-                </a>
-
-                {showSponsorTrigger &&
-                  (sponsorDirectLink ? (
-                    <a
-                      href={sponsorDirectLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex w-full min-h-[52px] items-center justify-center gap-1.5 rounded-xl border border-amber-400/50 bg-amber-400 hover:bg-amber-300 text-zinc-950 font-display font-extrabold text-xs sm:text-sm text-center leading-tight px-3.5 py-3 transition-colors"
-                    >
-                      <Film className="h-4 w-4 shrink-0" />
-                      <span>🎬 Koute / Gade Sponsor Pou Sipòte Sit la</span>
-                    </a>
-                  ) : (
-                    onTriggerSponsorAd && (
-                      <button
-                        type="button"
-                        onClick={onTriggerSponsorAd}
-                        className="flex w-full min-h-[52px] items-center justify-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 font-display font-bold text-xs sm:text-sm text-center leading-tight px-3.5 py-3 transition-colors cursor-pointer"
-                      >
-                        <Film className="h-4 w-4 shrink-0" />
-                        <span>🎬 Koute / Gade Sponsor Pou Sipòte Sit la</span>
-                      </button>
-                    )
-                  ))}
-              </div>
+                📲 EKRI ADMIN NAN SOU WHATSAPP (+509 38569265)
+              </a>
 
               <div className="pt-1">
                 <button
