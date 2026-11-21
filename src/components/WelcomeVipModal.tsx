@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Download, AlertCircle, FolderArchive, Clock } from 'lucide-react';
+import { X, CheckCircle2, Download, AlertCircle, FolderArchive, Clock, Film } from 'lucide-react';
 import {
   MusicPack,
   VipKeyRecord,
@@ -14,6 +14,8 @@ interface WelcomeVipModalProps {
   allPacks: MusicPack[];
   activeKey: VipKeyRecord | null;
   pendingPack: MusicPack | null;
+  showSponsorTrigger?: boolean;
+  onTriggerSponsorAd?: () => void;
   onUnlock: (record: VipKeyRecord) => void;
   onUnlockOrDownloadPack: (pack: MusicPack) => void;
   onBrowsePacks: () => void;
@@ -24,6 +26,8 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
   allPacks,
   activeKey,
   pendingPack,
+  showSponsorTrigger = false,
+  onTriggerSponsorAd,
   onUnlock,
   onUnlockOrDownloadPack,
   onBrowsePacks,
@@ -243,6 +247,17 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
               >
                 📲 EKRI ADMIN NAN SOU WHATSAPP (+509 38569265)
               </a>
+
+              {showSponsorTrigger && onTriggerSponsorAd && (
+                <button
+                  type="button"
+                  onClick={onTriggerSponsorAd}
+                  className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 font-bold text-xs sm:text-sm px-4 py-2.5 transition-colors cursor-pointer"
+                >
+                  <Film className="h-4 w-4 shrink-0" />
+                  <span>🎬 Gade yon Ti Anons Sponsor</span>
+                </button>
+              )}
 
               <div className="pt-1">
                 <button

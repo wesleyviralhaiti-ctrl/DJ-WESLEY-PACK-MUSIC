@@ -29,6 +29,8 @@ import { AdminPanelModal } from './components/AdminPanelModal';
 import { QuotaExhaustedModal } from './components/QuotaExhaustedModal';
 import { ZipFilenameText } from './components/ZipFilenameText';
 import { PWAInstallButton } from './components/PWAInstallButton';
+import { StickyBannerAd, NativeSponsorCard, SponsorAdModal } from './components/AdSlots';
+import { loadAdConfig } from './data/adConfig';
 
 const ADMIN_SESSION_STORAGE_KEY = 'wesley_admin_auth_session_v1';
 
@@ -72,7 +74,16 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [colorVersion, setColorVersion] = useState<number>(0);
   const [customPacksVersion, setCustomPacksVersion] = useState<number>(0);
+  const [adConfigVersion, setAdConfigVersion] = useState<number>(0);
+  const [isStickyBannerDismissed, setIsStickyBannerDismissed] = useState<boolean>(false);
+  const [isSponsorModalOpen, setIsSponsorModalOpen] = useState<boolean>(false);
+  const [sponsorTargetPack, setSponsorTargetPack] = useState<MusicPack | null>(null);
   const [packagingPackId, setPackagingPackId] = useState<string | null>(null);
+
+  const adConfig = useMemo(() => {
+    void adConfigVersion;
+    return loadAdConfig();
+  }, [adConfigVersion]);
 
   const allPacks = useMemo(() => {
     void customPacksVersion;
@@ -111,6 +122,8 @@ export default function App() {
     (record: VipKeyRecord) => {
       window.localStorage.setItem(ACTIVE_KEY_STORAGE_KEY, record.code);
       setActiveKey(record);
+      setIsSponsorModalOpen(false);
+      setSponsorTargetPack(null);
       showToast(
         `Aksè VIP debloke! Kredi Folder: ${record.remainingFolders} / ${record.totalFolders} Folder`
       );
@@ -239,6 +252,8 @@ export default function App() {
   const hasActiveKey = Boolean(activeKey);
   const hasRemainingCredits = Boolean(activeKey && !activeKey.burned && activeKey.remainingFolders > 0);
   const isUnlockedForDownload = Boolean((isAdminAuthenticated && isAdminFreeMode) || hasRemainingCredits);
+  const shouldShowAds = adConfig.enabled && !isUnlockedForDownload;
+  const shouldShowStickyBanner = shouldShowAds && !isStickyBannerDismissed;
 
   return (
     <div className="min-h-[100dvh] pb-[env(safe-area-inset-bottom)] bg-[#0B0C10] text-zinc-100 flex flex-col">
@@ -510,16 +525,17 @@ export default function App() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {allPacks.map((pack) => {
+                {allPacks.map((pack, idx) => {
                   const isComingSoon = Boolean(pack.isComingSoon);
                   const isPackaging = packagingPackId === pack.id;
                   const zipFilename = formatZipFolderFilename(pack);
+                  const showNativeSponsorAfter = shouldShowAds && (idx + 1) % 4 === 0;
                   void colorVersion;
 
                   return (
-                    <article
-                      key={pack.id}
-                      className={`group flex flex-col justify-between rounded-2xl border p-6 transition-all duration-200 hover:-translate-y-0.5 ${
+                    <React.Fragment key={pack.id}>
+                      <article
+                        className={`group flex flex-col justify-between rounded-2xl border p-6 transition-all duration-200 hover:-translate-y-0.5 ${
                         isComingSoon
                           ? 'bg-gradient-to-b from-amber-500/[0.06] to-[#13151B] border-amber-500/45 shadow-[0_0_24px_rgba(245,158,11,0.07)]'
                           : isUnlockedForDownload
@@ -605,6 +621,10 @@ export default function App() {
                             onClick={() => {
                               if (activeKey && (activeKey.burned || activeKey.remainingFolders <= 0)) {
                                 handleExhaustedAttempt(activeKey.code);
+                              } else if (shouldShowAds && adConfig.enableSponsorPopup) {
+                                setPendingPack(pack);
+                                setSponsorTargetPack(pack);
+                                setIsSponsorModalOpen(true);
                               } else {
                                 setPendingPack(pack);
                                 setIsWelcomeOpen(true);
@@ -617,7 +637,19 @@ export default function App() {
                           </button>
                         )}
                       </div>
-                    </article>
+                      </article>
+
+                      {showNativeSponsorAfter && (
+                        <NativeSponsorCard
+                          adConfig={adConfig}
+                          slotIndex={Math.floor((idx + 1) / 4)}
+                          onOpenVipModal={() => {
+                            setPendingPack(null);
+                            setIsWelcomeOpen(true);
+                          }}
+                        />
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </div>
@@ -672,7 +704,11 @@ export default function App() {
       </main>
 
       {/* Clean Footer */}
-      <footer className="border-t border-zinc-800/80 bg-[#090A0D]">
+      <footer
+        className={`border-t border-zinc-800/80 bg-[#090A0D] ${
+          shouldShowStickyBanner ? 'pb-24 sm:pb-28' : ''
+        }`}
+      >
         <div className="mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-6xl px-4 sm:px-6 py-8 text-xs text-zinc-400">
           <p>© {new Date().getFullYear()} WESLEY MUSIC PACKS. Tout dwa rezève.</p>
           <div className="flex flex-wrap items-center gap-6">
@@ -712,11 +748,33 @@ export default function App() {
         allPacks={allPacks}
         activeKey={activeKey}
         pendingPack={pendingPack}
+        showSponsorTrigger={shouldShowAds}
+        onTriggerSponsorAd={() => {
+          setIsWelcomeOpen(false);
+          setSponsorTargetPack(pendingPack);
+          setIsSponsorModalOpen(true);
+        }}
         onUnlock={handleUnlock}
         onUnlockOrDownloadPack={(pack) => void handleUnlockOrDownloadPack(pack)}
         onBrowsePacks={() => {
           setIsWelcomeOpen(false);
           setPendingPack(null);
+        }}
+      />
+
+      {/* Optional VidMate-Style Sponsor Ad Gate before VIP Unlock */}
+      <SponsorAdModal
+        isOpen={isSponsorModalOpen && shouldShowAds}
+        adConfig={adConfig}
+        targetPack={sponsorTargetPack}
+        onClose={() => {
+          setIsSponsorModalOpen(false);
+          setSponsorTargetPack(null);
+        }}
+        onProceedToVipKey={() => {
+          setIsSponsorModalOpen(false);
+          setPendingPack(sponsorTargetPack);
+          setIsWelcomeOpen(true);
         }}
       />
 
@@ -732,7 +790,7 @@ export default function App() {
         }}
       />
 
-      {/* Password-Protected Admin Key Generator, Folder Deleter & Uploader Modal */}
+      {/* Password-Protected Admin Key Generator, Folder Deleter, Uploader & Ad Manager Modal */}
       <AdminPanelModal
         isOpen={isAdminOpen}
         isAuthenticated={isAdminAuthenticated}
@@ -745,6 +803,17 @@ export default function App() {
         onKeysChanged={syncActiveKeyFromStore}
         onColorsChanged={() => setColorVersion((v) => v + 1)}
         onCustomPacksChanged={() => setCustomPacksVersion((v) => v + 1)}
+        onAdConfigChanged={() => {
+          setAdConfigVersion((v) => v + 1);
+          setIsStickyBannerDismissed(false);
+        }}
+      />
+
+      {/* Bottom Sticky Mobile/Desktop Banner Ad (Auto-hidden for VIP buyers) */}
+      <StickyBannerAd
+        adConfig={adConfig}
+        isVisible={shouldShowStickyBanner}
+        onDismiss={() => setIsStickyBannerDismissed(true)}
       />
 
       {/* Non-intrusive Feedback Toast */}
@@ -752,7 +821,9 @@ export default function App() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-xl bg-[#13151B] border border-emerald-500/40 px-4 py-3 text-sm font-medium text-emerald-200 shadow-xl max-w-sm"
+          className={`fixed right-5 z-50 flex items-center gap-2.5 rounded-xl bg-[#13151B] border border-emerald-500/40 px-4 py-3 text-sm font-medium text-emerald-200 shadow-xl max-w-sm ${
+            shouldShowStickyBanner ? 'bottom-24 sm:bottom-28' : 'bottom-5'
+          }`}
         >
           <FolderCheck className="h-4 w-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>

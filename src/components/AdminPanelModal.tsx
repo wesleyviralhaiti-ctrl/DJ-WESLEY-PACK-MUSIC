@@ -25,6 +25,9 @@ import {
   FolderArchive,
   Hourglass,
   Plus,
+  Megaphone,
+  Save,
+  Film,
 } from 'lucide-react';
 import {
   COMING_SOON_GENRE_PRESETS,
@@ -64,6 +67,14 @@ import {
 } from '../data/musicPacks';
 import { ZipFilenameText } from './ZipFilenameText';
 import {
+  AdSystemConfig,
+  DEFAULT_PROMO_HEADLINE,
+  isValidOptionalHttpUrl,
+  loadAdConfig,
+  resetAdConfig,
+  saveAdConfig,
+} from '../data/adConfig';
+import {
   analyzeMp3FileForHotCues,
   clearUploadedMp3sForPack,
   countUploadedMp3sForPack,
@@ -93,6 +104,7 @@ interface AdminPanelModalProps {
   onKeysChanged: () => void;
   onColorsChanged: () => void;
   onCustomPacksChanged: () => void;
+  onAdConfigChanged: () => void;
 }
 
 const PREFIX_PRESETS = ['W#', 'JW@', 'W$', 'W*'];
@@ -109,12 +121,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   onKeysChanged,
   onColorsChanged,
   onCustomPacksChanged,
+  onAdConfigChanged,
 }) => {
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'packs' | 'keys' | 'colors'>('packs');
+  const [activeTab, setActiveTab] = useState<'packs' | 'colors' | 'keys' | 'ads'>('packs');
 
   // Top Full-Folder Dropzone & Coming Soon Creation State
   const [createAsComingSoon, setCreateAsComingSoon] = useState(false);
@@ -171,6 +184,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [colorSavedBanner, setColorSavedBanner] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // VidMate-Style Ad System Manager state (Adsterra / Monetag)
+  const [adDraftConfig, setAdDraftConfig] = useState<AdSystemConfig>(() => loadAdConfig());
+  const [adSaveBanner, setAdSaveBanner] = useState<string | null>(null);
+  const [adUrlError, setAdUrlError] = useState<string | null>(null);
+
   useEffect(() => {
     if (isOpen && isAuthenticated) {
       const current = loadAllVipKeys();
@@ -179,6 +197,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       setDraftColorConfig(getFolderColorConfig(selectedPackId));
       setDraftCuesConfig(getFolderCuesConfig(selectedPackId));
       setUploadedCount(countUploadedMp3sForPack(selectedPackId));
+      setAdDraftConfig(loadAdConfig());
+      setAdUrlError(null);
     }
     if (!isOpen) {
       cueAuditionPlayer.stop();
@@ -814,6 +834,55 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     window.setTimeout(() => setColorSavedBanner(false), 3000);
   };
 
+  const handleToggleMasterAds = () => {
+    const nextConfig: AdSystemConfig = {
+      ...adDraftConfig,
+      enabled: !adDraftConfig.enabled,
+    };
+    const saved = saveAdConfig(nextConfig);
+    setAdDraftConfig(saved);
+    onAdConfigChanged();
+    setAdSaveBanner(
+      saved.enabled
+        ? '🟢 Anons yo AKTIVE pou vizitè ki poko gen Kle VIP!'
+        : '🔴 Tout anons yo FÈMEN sou tout sit la.'
+    );
+    window.setTimeout(() => setAdSaveBanner(null), 3500);
+  };
+
+  const handleToggleSponsorPopup = () => {
+    const nextConfig: AdSystemConfig = {
+      ...adDraftConfig,
+      enableSponsorPopup: !adDraftConfig.enableSponsorPopup,
+    };
+    const saved = saveAdConfig(nextConfig);
+    setAdDraftConfig(saved);
+    onAdConfigChanged();
+  };
+
+  const handleSaveAdManager = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isValidOptionalHttpUrl(adDraftConfig.smartLinkUrl)) {
+      setAdUrlError('Lyen SmartLink lan dwe kòmanse ak https:// oswa http:// (oswa kite l vid).');
+      return;
+    }
+    setAdUrlError(null);
+    const saved = saveAdConfig(adDraftConfig);
+    setAdDraftConfig(saved);
+    onAdConfigChanged();
+    setAdSaveBanner('✅ Kòd Adsterra / Monetag yo anrejistre epi aktive sou sit la!');
+    window.setTimeout(() => setAdSaveBanner(null), 4000);
+  };
+
+  const handleResetAds = () => {
+    const fresh = resetAdConfig();
+    setAdDraftConfig(fresh);
+    setAdUrlError(null);
+    onAdConfigChanged();
+    setAdSaveBanner('🧹 Anons yo reyajiste ak banyè promo pa defo Wesley Music yo.');
+    window.setTimeout(() => setAdSaveBanner(null), 3500);
+  };
+
   const overrideCount = Object.keys(draftColorConfig.trackColors || {}).length;
 
   return (
@@ -948,6 +1017,18 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               >
                 <KeyRound className="h-4 w-4 shrink-0" />
                 <span>🔑 Kòd VIP (Yon Sèl Fwa)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('ads')}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                  activeTab === 'ads'
+                    ? 'bg-emerald-500 text-zinc-950'
+                    : 'bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-800'
+                }`}
+              >
+                <Megaphone className="h-4 w-4 shrink-0" />
+                <span>📢 Jere Anons (Adsterra / Monetag)</span>
               </button>
             </div>
 
@@ -1846,10 +1927,207 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     )}
                   </div>
                 </>
+              ) : activeTab === 'ads' ? (
+                /* 📢 Jere Anons (Adsterra / Monetag) */
+                <div className="space-y-5">
+                  {/* Master On/Off Switch Card */}
+                  <div
+                    className={`rounded-2xl border p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
+                      adDraftConfig.enabled
+                        ? 'border-emerald-500/40 bg-emerald-500/10'
+                        : 'border-rose-500/35 bg-rose-500/10'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Megaphone className="h-5 w-5 text-emerald-400 shrink-0" />
+                        <h3 className="font-display text-base sm:text-lg font-bold text-white">
+                          📢 Sistèm Anons VidMate (Adsterra / Monetag)
+                        </h3>
+                      </div>
+                      <p className="text-xs text-zinc-300 leading-relaxed max-w-2xl">
+                        Anons yo parèt sèlman pou vizitè ki poko antre Kle VIP. Depi yon kliyan
+                        debloke sit la ak Kle VIP li, <strong className="text-white">tout anons yo kache otomatikman</strong>.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={adDraftConfig.enabled}
+                      onClick={handleToggleMasterAds}
+                      className={`inline-flex items-center gap-3 px-4 py-3 rounded-xl border text-xs sm:text-sm font-extrabold whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
+                        adDraftConfig.enabled
+                          ? 'bg-emerald-500 border-emerald-400 text-zinc-950 hover:bg-emerald-400'
+                          : 'bg-[#0B0C10] border-rose-500/50 text-rose-300 hover:border-rose-400'
+                      }`}
+                    >
+                      <span>
+                        {adDraftConfig.enabled ? '🟢 Aktive Anons yo' : '🔴 Fèmen Anons yo'}
+                      </span>
+                    </button>
+                  </div>
+
+                  {adSaveBanner && (
+                    <div className="rounded-xl bg-emerald-500/15 border border-emerald-500/40 px-4 py-2.5 text-xs font-semibold text-emerald-200 flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                      <span>{adSaveBanner}</span>
+                    </div>
+                  )}
+
+                  {/* Adsterra / Monetag Paste Form */}
+                  <form
+                    onSubmit={handleSaveAdManager}
+                    className="rounded-2xl border border-zinc-800 bg-[#0E1015] p-5 space-y-5"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
+                      <div>
+                        <h4 className="font-display text-sm sm:text-base font-bold text-white">
+                          Kole Kòd Adsterra / Monetag ou yo (Oswa itilize Promo Pa Defo yo)
+                        </h4>
+                        <p className="text-xs text-zinc-400 mt-0.5">
+                          Lè bwat yo vid, sit la montre bèl banyè promo kreyòl « {DEFAULT_PROMO_HEADLINE} » otomatikman.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={adDraftConfig.enableSponsorPopup}
+                        onClick={handleToggleSponsorPopup}
+                        className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer shrink-0 ${
+                          adDraftConfig.enableSponsorPopup
+                            ? 'bg-amber-500/15 border-amber-400/50 text-amber-200'
+                            : 'bg-[#0B0C10] border-zinc-700 text-zinc-400'
+                        }`}
+                      >
+                        <Film className="h-3.5 w-3.5 shrink-0" />
+                        <span>
+                          {adDraftConfig.enableSponsorPopup
+                            ? '🎬 Popup Sponsor: AKTIF'
+                            : '🎬 Popup Sponsor: FÈMEN'}
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* 1. Banner Ad Script / HTML */}
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <label
+                            htmlFor="ad-banner-script-input"
+                            className="text-xs font-semibold text-zinc-200"
+                          >
+                            1. Banner Ad Script / HTML (320×50 Mobil / 728×90 Desktop — Kole anba sit la)
+                          </label>
+                          <span className="text-[11px] font-mono text-emerald-400">
+                            {adDraftConfig.bannerAdHtml.trim() ? '🟢 Kòd Live Aktif' : '✨ Promo Pa Defo'}
+                          </span>
+                        </div>
+                        <textarea
+                          id="ad-banner-script-input"
+                          rows={4}
+                          value={adDraftConfig.bannerAdHtml}
+                          onChange={(e) =>
+                            setAdDraftConfig((prev) => ({
+                              ...prev,
+                              bannerAdHtml: e.target.value,
+                            }))
+                          }
+                          placeholder={`<script type="text/javascript">\n  atOptions = { 'key': '...', 'format': 'iframe', 'height': 50, 'width': 320 };\n</script>\n<script src="https://..."></script>`}
+                          spellCheck={false}
+                          className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 p-3 font-mono text-xs text-emerald-200 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none"
+                        />
+                      </div>
+
+                      {/* 2. In-Feed Native Ad Script */}
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <label
+                            htmlFor="ad-native-script-input"
+                            className="text-xs font-semibold text-zinc-200"
+                          >
+                            2. In-Feed Native Ad Script / HTML (Parèt ant chak 4 Folder .ZIP)
+                          </label>
+                          <span className="text-[11px] font-mono text-emerald-400">
+                            {adDraftConfig.nativeAdHtml.trim() ? '🟢 Kòd Live Aktif' : '✨ Promo Pa Defo'}
+                          </span>
+                        </div>
+                        <textarea
+                          id="ad-native-script-input"
+                          rows={4}
+                          value={adDraftConfig.nativeAdHtml}
+                          onChange={(e) =>
+                            setAdDraftConfig((prev) => ({
+                              ...prev,
+                              nativeAdHtml: e.target.value,
+                            }))
+                          }
+                          placeholder={`<script async="async" data-cfasync="false" src="https://.../invoke.js"></script>\n<div id="container-..."></div>`}
+                          spellCheck={false}
+                          className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 p-3 font-mono text-xs text-emerald-200 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none"
+                        />
+                      </div>
+
+                      {/* 3. Direct SmartLink URL */}
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <label
+                            htmlFor="ad-smartlink-url-input"
+                            className="text-xs font-semibold text-zinc-200"
+                          >
+                            3. Direct SmartLink URL (Adsterra Direct Link / Monetag SmartLink)
+                          </label>
+                          <span className="text-[11px] font-mono text-emerald-400">
+                            {adDraftConfig.smartLinkUrl.trim() ? '🟢 Lyen Aktif' : '💬 WhatsApp Pa Defo'}
+                          </span>
+                        </div>
+                        <input
+                          id="ad-smartlink-url-input"
+                          type="url"
+                          value={adDraftConfig.smartLinkUrl}
+                          onChange={(e) => {
+                            setAdDraftConfig((prev) => ({
+                              ...prev,
+                              smartLinkUrl: e.target.value,
+                            }));
+                            if (adUrlError) setAdUrlError(null);
+                          }}
+                          placeholder="https://www.profitablegatecpm.com/... (oswa Monetag Direct Link)"
+                          className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 px-3.5 py-2.5 font-mono text-xs sm:text-sm text-white placeholder:font-sans placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none"
+                        />
+                        {adUrlError && (
+                          <p role="alert" className="text-xs text-rose-400 mt-1.5 font-medium">
+                            {adUrlError}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-zinc-800/80">
+                      <button
+                        type="button"
+                        onClick={handleResetAds}
+                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-zinc-700 hover:border-amber-500/60 bg-[#0B0C10] text-xs font-semibold text-zinc-300 hover:text-amber-200 transition-colors cursor-pointer"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        <span>🧹 Reyajiste nan Promo Pa Defo</span>
+                      </button>
+
+                      <button
+                        type="submit"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-display font-extrabold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer"
+                      >
+                        <Save className="h-4 w-4 shrink-0" />
+                        <span>💾 Anrejistre Kòd Anons yo</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
               ) : !selectedPack ? (
                 <div className="rounded-xl border border-zinc-800 bg-[#0E1015] p-8 text-center text-sm text-zinc-400">
                   Pa gen okenn folder .ZIP disponib pou w konfigire. Chwazi yon folder anlè a oswa
-                  reyajiste pake demo yo nan tab « 📁 Jere Pake Mizik Yo ».
+                  reyajiste folder ofisyèl yo nan tab « 📁 Jere Pake Mizik Yo ».
                 </div>
               ) : (
                 /* VirtualDJ MP3 Energy Scanner + Folder Color Picker + Cue Fine-Tuner */
