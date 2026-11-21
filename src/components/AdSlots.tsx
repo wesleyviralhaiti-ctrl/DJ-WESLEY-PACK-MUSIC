@@ -36,7 +36,7 @@ export const SandboxedAdFrame: React.FC<SandboxedAdFrameProps> = ({
       title={title}
       srcDoc={srcDoc}
       sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
-      referrerPolicy="no-referrer"
+      referrerPolicy="no-referrer-when-downgrade"
       className={`border-0 bg-[#0B0C10] ${className}`}
     />
   );
@@ -325,38 +325,50 @@ export const SponsorAdModal: React.FC<SponsorAdModalProps> = ({
 
         {/* Actions */}
         <div className="space-y-3">
-          {safeSmartLink ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {safeSmartLink ? (
+              <a
+                href={safeSmartLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setWatchedSponsor(true)}
+                className="inline-flex items-center justify-center gap-1.5 min-h-[48px] px-3.5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-display font-extrabold text-xs sm:text-sm text-center leading-tight transition-colors"
+              >
+                <Film className="h-4 w-4 shrink-0" />
+                <span>🎬 Koute / Gade Sponsor Pou Sipòte Sit la</span>
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!watchedSponsor && countdown === null) {
+                    setCountdown(4);
+                  }
+                }}
+                className="inline-flex items-center justify-center gap-1.5 min-h-[48px] px-3.5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-display font-extrabold text-xs sm:text-sm text-center leading-tight transition-colors cursor-pointer"
+              >
+                <Film className="h-4 w-4 shrink-0" />
+                <span>
+                  {countdown !== null && countdown > 0
+                    ? `🎬 Ap Gade (${countdown}s)...`
+                    : watchedSponsor
+                      ? '✅ Anons Gade!'
+                      : '🎬 Koute / Gade Sponsor Pou Sipòte Sit la'}
+                </span>
+              </button>
+            )}
+
             <a
-              href={safeSmartLink}
+              href={WHATSAPP_BASE_URL}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => setWatchedSponsor(true)}
-              className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-display font-extrabold text-sm whitespace-nowrap transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 min-h-[48px] px-3.5 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-zinc-950 font-display font-extrabold text-xs sm:text-sm text-center leading-tight transition-colors"
             >
-              <Film className="h-4 w-4 shrink-0" />
-              <span>🎬 Gade yon Ti Anons Sponsor</span>
-              <ExternalLink className="h-4 w-4 shrink-0" />
+              <MessageCircle className="h-4 w-4 shrink-0" />
+              <span>📲 Mande Kle VIP sou WhatsApp (+509 38569265)</span>
             </a>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                if (!watchedSponsor && countdown === null) {
-                  setCountdown(4);
-                }
-              }}
-              className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-display font-extrabold text-sm whitespace-nowrap transition-colors cursor-pointer"
-            >
-              <Film className="h-4 w-4 shrink-0" />
-              <span>
-                {countdown !== null && countdown > 0
-                  ? `🎬 Ap Gade Anons (${countdown}s)...`
-                  : watchedSponsor
-                    ? '✅ Anons Gade — Klike Anba Pou Kle VIP'
-                    : '🎬 Gade yon Ti Anons Sponsor'}
-              </span>
-            </button>
-          )}
+          </div>
 
           <button
             type="button"
@@ -366,16 +378,6 @@ export const SponsorAdModal: React.FC<SponsorAdModalProps> = ({
             <KeyRound className="h-4 w-4 shrink-0" />
             <span>🔑 Mwen Gen Kle VIP — Debloke San Anons</span>
           </button>
-
-          <a
-            href={WHATSAPP_BASE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl border border-zinc-700 hover:border-zinc-500 text-zinc-200 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors"
-          >
-            <MessageCircle className="h-4 w-4 text-[#25D366] shrink-0" />
-            <span>Achte yon Kle VIP sou WhatsApp (+509 38569265)</span>
-          </a>
         </div>
       </div>
     </div>

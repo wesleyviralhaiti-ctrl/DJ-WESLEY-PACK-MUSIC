@@ -30,7 +30,7 @@ import { QuotaExhaustedModal } from './components/QuotaExhaustedModal';
 import { ZipFilenameText } from './components/ZipFilenameText';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { StickyBannerAd, NativeSponsorCard, SponsorAdModal } from './components/AdSlots';
-import { loadAdConfig } from './data/adConfig';
+import { loadAdConfig, sanitizeHttpUrl } from './data/adConfig';
 
 const ADMIN_SESSION_STORAGE_KEY = 'wesley_admin_auth_session_v1';
 
@@ -749,6 +749,7 @@ export default function App() {
         activeKey={activeKey}
         pendingPack={pendingPack}
         showSponsorTrigger={shouldShowAds}
+        sponsorDirectLink={sanitizeHttpUrl(adConfig.smartLinkUrl)}
         onTriggerSponsorAd={() => {
           setIsWelcomeOpen(false);
           setSponsorTargetPack(pendingPack);

@@ -1,9 +1,12 @@
+export const DEFAULT_HILLTOP_DIRECT_LINK = 'https://plump-plastic.com/uCIfdy';
+
 export interface AdSystemConfig {
   enabled: boolean;
   enableSponsorPopup: boolean;
   bannerAdHtml: string;
   nativeAdHtml: string;
   smartLinkUrl: string;
+  smartLinkClearedByAdmin?: boolean;
   updatedAt: number;
 }
 
@@ -20,7 +23,8 @@ export const DEFAULT_AD_CONFIG: AdSystemConfig = {
   enableSponsorPopup: true,
   bannerAdHtml: '',
   nativeAdHtml: '',
-  smartLinkUrl: '',
+  smartLinkUrl: DEFAULT_HILLTOP_DIRECT_LINK,
+  smartLinkClearedByAdmin: false,
   updatedAt: 0,
 };
 
@@ -48,16 +52,20 @@ export function loadAdConfig(): AdSystemConfig {
     const raw = window.localStorage.getItem(AD_CONFIG_STORAGE_KEY);
     if (!raw) return DEFAULT_AD_CONFIG;
     const parsed = JSON.parse(raw) as Partial<AdSystemConfig>;
+    const clearedByAdmin = Boolean(parsed.smartLinkClearedByAdmin);
+    const parsedLink =
+      typeof parsed.smartLinkUrl === 'string'
+        ? sanitizeHttpUrl(parsed.smartLinkUrl) ?? ''
+        : '';
+
     return {
       enabled: typeof parsed.enabled === 'boolean' ? parsed.enabled : true,
       enableSponsorPopup:
         typeof parsed.enableSponsorPopup === 'boolean' ? parsed.enableSponsorPopup : true,
       bannerAdHtml: typeof parsed.bannerAdHtml === 'string' ? parsed.bannerAdHtml : '',
       nativeAdHtml: typeof parsed.nativeAdHtml === 'string' ? parsed.nativeAdHtml : '',
-      smartLinkUrl:
-        typeof parsed.smartLinkUrl === 'string'
-          ? sanitizeHttpUrl(parsed.smartLinkUrl) ?? ''
-          : '',
+      smartLinkUrl: parsedLink || (clearedByAdmin ? '' : DEFAULT_HILLTOP_DIRECT_LINK),
+      smartLinkClearedByAdmin: clearedByAdmin,
       updatedAt: typeof parsed.updatedAt === 'number' ? parsed.updatedAt : Date.now(),
     };
   } catch {
@@ -75,6 +83,7 @@ export function saveAdConfig(config: AdSystemConfig): AdSystemConfig {
     bannerAdHtml: config.bannerAdHtml,
     nativeAdHtml: config.nativeAdHtml,
     smartLinkUrl: safeSmartLink,
+    smartLinkClearedByAdmin: safeSmartLink.length === 0,
     updatedAt: Date.now(),
   };
   try {
@@ -88,6 +97,7 @@ export function saveAdConfig(config: AdSystemConfig): AdSystemConfig {
 export function resetAdConfig(): AdSystemConfig {
   const fresh: AdSystemConfig = {
     ...DEFAULT_AD_CONFIG,
+    smartLinkClearedByAdmin: false,
     updatedAt: Date.now(),
   };
   try {
