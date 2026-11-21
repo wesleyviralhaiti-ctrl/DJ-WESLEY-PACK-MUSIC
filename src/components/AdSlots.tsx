@@ -203,26 +203,31 @@ interface InterstitialAdModalProps {
   onClose: () => void;
 }
 
+const INTERSTITIAL_DURATION_MS = 4500;
+
 export const InterstitialAdModal: React.FC<InterstitialAdModalProps> = ({
   isOpen,
   adConfig,
   onClose,
 }) => {
-  const [secondsLeft, setSecondsLeft] = useState<number>(4);
+  const [remainingMs, setRemainingMs] = useState<number>(INTERSTITIAL_DURATION_MS);
 
   useEffect(() => {
-    if (isOpen) {
-      setSecondsLeft(4);
-    }
+    if (!isOpen) return;
+    const startTime = Date.now();
+    setRemainingMs(INTERSTITIAL_DURATION_MS);
+
+    const interval = window.setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const nextRemaining = Math.max(0, INTERSTITIAL_DURATION_MS - elapsed);
+      setRemainingMs(nextRemaining);
+      if (nextRemaining <= 0) {
+        window.clearInterval(interval);
+      }
+    }, 100);
+
+    return () => window.clearInterval(interval);
   }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen || secondsLeft <= 0) return;
-    const timer = window.setTimeout(() => {
-      setSecondsLeft((prev) => Math.max(0, prev - 1));
-    }, 1000);
-    return () => window.clearTimeout(timer);
-  }, [isOpen, secondsLeft]);
 
   if (!isOpen) return null;
 
@@ -234,7 +239,12 @@ export const InterstitialAdModal: React.FC<InterstitialAdModalProps> = ({
     : hasCustomBanner
       ? adConfig.bannerAdHtml
       : '';
-  const canClose = secondsLeft <= 0;
+  const canClose = remainingMs <= 0;
+  const displaySeconds = Math.min(4, Math.max(1, Math.ceil(remainingMs / 1000)));
+  const progressPercent = Math.min(
+    100,
+    Math.max(0, ((INTERSTITIAL_DURATION_MS - remainingMs) / INTERSTITIAL_DURATION_MS) * 100)
+  );
 
   return (
     <div
@@ -244,7 +254,7 @@ export const InterstitialAdModal: React.FC<InterstitialAdModalProps> = ({
       aria-labelledby="interstitial-ad-heading"
     >
       <div className="relative w-full max-w-lg rounded-2xl bg-[#13151B] border border-emerald-500/45 shadow-[0_0_50px_rgba(16,185,129,0.18)] p-5 sm:p-7 my-auto space-y-5">
-        {/* Top Bar: Sponsor Badge + Top-Right Countdown / Close Button */}
+        {/* Top Bar: Sponsor Badge + Top-Right Countdown ("⏳ 4s...") / Prominent "✖" Close Button */}
         <div className="flex items-center justify-between gap-3">
           <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/45 bg-amber-500/15 px-3 py-1.5 text-[11px] font-mono font-extrabold tracking-wider text-amber-300 uppercase">
             📢 ANONS SPONSOR (WESLEY MUSIC)
@@ -254,19 +264,30 @@ export const InterstitialAdModal: React.FC<InterstitialAdModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 px-3 py-1.5 text-xs font-extrabold text-zinc-950 transition-colors cursor-pointer whitespace-nowrap"
+              aria-label="Fèmen / Soti nan anons lan"
+              className="inline-flex items-center justify-center gap-1.5 min-h-[42px] min-w-[44px] rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 px-3.5 py-2 text-xs sm:text-sm font-extrabold text-zinc-950 transition-all cursor-pointer shadow-[0_0_16px_rgba(16,185,129,0.4)] whitespace-nowrap"
             >
-              <span>✖ Fèmen Anons la &amp; Kontinye</span>
+              <span className="text-base leading-none" aria-hidden="true">
+                ✖
+              </span>
+              <span>Fèmen / Soti</span>
             </button>
           ) : (
             <span
               aria-live="polite"
               className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-[#0B0C10] px-3 py-1.5 text-xs font-mono font-bold text-amber-300 tabular-nums whitespace-nowrap"
             >
-              <Clock className="h-3.5 w-3.5 shrink-0 animate-spin" />
-              <span>⏳ Tann {secondsLeft} segonn...</span>
+              <span>⏳ {displaySeconds}s...</span>
             </span>
           )}
+        </div>
+
+        {/* Smooth 4.5s progress bar */}
+        <div className="h-1 w-full rounded-full bg-zinc-800 overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-amber-400 to-emerald-400 transition-[width] duration-100 ease-linear"
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
 
         {/* Optional Custom Adsterra/Monetag Script Frame if pasted in Admin */}
@@ -316,7 +337,7 @@ export const InterstitialAdModal: React.FC<InterstitialAdModalProps> = ({
           </div>
         </a>
 
-        {/* Bottom 4-Second Countdown / Unlockable Close & Continue Button */}
+        {/* Bottom 4.5-Second Countdown / Prominent Unlockable Close & Exit Button */}
         <div className="pt-1">
           {canClose ? (
             <button
@@ -324,7 +345,7 @@ export const InterstitialAdModal: React.FC<InterstitialAdModalProps> = ({
               onClick={onClose}
               className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] px-5 py-3 rounded-xl bg-zinc-100 hover:bg-white text-zinc-950 font-display font-extrabold text-sm transition-colors cursor-pointer shadow-lg"
             >
-              <span>✖ Fèmen Anons la &amp; Kontinye</span>
+              <span>✖ Fèmen / Soti</span>
             </button>
           ) : (
             <div
@@ -332,7 +353,7 @@ export const InterstitialAdModal: React.FC<InterstitialAdModalProps> = ({
               className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] px-5 py-3 rounded-xl bg-[#0B0C10] border border-zinc-800 text-amber-300 font-mono font-bold text-sm tabular-nums cursor-wait"
             >
               <Clock className="h-4 w-4 shrink-0" />
-              <span>⏳ Tann {secondsLeft} segonn...</span>
+              <span>⏳ {displaySeconds}s...</span>
             </div>
           )}
           <p className="mt-2 text-center text-[11px] text-zinc-500">

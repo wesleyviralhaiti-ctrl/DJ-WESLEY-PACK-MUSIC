@@ -276,7 +276,7 @@ export default function App() {
         // ignore storage errors
       }
       setIsInterstitialOpen(true);
-    }, 1500);
+    }, 500);
 
     return () => window.clearTimeout(timer);
   }, [shouldShowAds, adConfig.enableSponsorPopup]);
