@@ -1,4 +1,5 @@
 import customDefaultFoldersJson from './customDefaultFolders.json';
+import { supabase, SupabaseVipKeyRow } from '../lib/supabase';
 
 export interface TrackItem {
   number: number;
@@ -555,6 +556,464 @@ export function consumeFolderCredit(
     updatedRecord: updated,
     wasAlreadyDownloaded: alreadyDownloaded,
     justExhausted: !alreadyDownloaded && isNowBurned,
+  };
+}
+
+// ============================================================================
+// SUPABASE REALTIME SYNC FOR `vip_keys` TABLE
+// ============================================================================
+
+function mapSupabaseRowToVipKey(row: SupabaseVipKeyRow): VipKeyRecord {
+  return {
+    code: String(row.code || '').trim().toUpperCase(),
+    totalFolders: Number(row.total_folders) || 1,
+    remainingFolders: Math.max(0, Number(row.remaining_folders) ?? 0),
+    downloadedPackIds: Array.isArray(row.downloaded_pack_ids) ? row.downloaded_pack_ids : [],
+    createdAt: Number(row.created_at) || Date.now(),
+    activatedAt: row.activated_at != null ? Number(row.activated_at) : undefined,
+    activatedDeviceToken: row.activated_device_token || undefined,
+    burned: Boolean(row.burned),
+    burnedAt: row.burned_at != null ? Number(row.burned_at) : undefined,
+    note: row.note || undefined,
+  };
+}
+
+function mapVipKeyToSupabaseRow(record: VipKeyRecord): SupabaseVipKeyRow {
+  return {
+    code: record.code.trim().toUpperCase(),
+    total_folders: record.totalFolders,
+    remaining_folders: record.remainingFolders,
+    downloaded_pack_ids: record.downloadedPackIds || [],
+    created_at: record.createdAt || Date.now(),
+    activated_at: record.activatedAt ?? null,
+    activated_device_token: record.activatedDeviceToken ?? null,
+    burned: Boolean(record.burned),
+    burned_at: record.burnedAt ?? null,
+    note: record.note ?? null,
+  };
+}
+
+export function upsertLocalVipKeyCache(record: VipKeyRecord): void {
+  try {
+    const existing = loadAllVipKeys().filter(
+      (k) => k.code.toUpperCase() !== record.code.toUpperCase()
+    );
+    saveAllVipKeys([record, ...existing]);
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
+export function removeLocalVipKeyCache(code: string): void {
+  try {
+    const norm = code.trim().toUpperCase();
+    saveAllVipKeys(loadAllVipKeys().filter((k) => k.code.toUpperCase() !== norm));
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
+export async function fetchAllVipKeysRemote(): Promise<VipKeyRecord[]> {
+  try {
+    const { data, error } = await supabase
+      .from('vip_keys')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      return loadAllVipKeys();
+    }
+
+    const mapped = (data as SupabaseVipKeyRow[]).map(mapSupabaseRowToVipKey);
+    try {
+      saveAllVipKeys(mapped);
+    } catch {
+      // ignore storage quota errors
+    }
+    return mapped;
+  } catch {
+    return loadAllVipKeys();
+  }
+}
+
+export async function fetchVipKeyByCodeRemote(rawCode: string): Promise<VipKeyRecord | null> {
+  const normalized = rawCode.trim().toUpperCase();
+  if (!normalized) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('vip_keys')
+      .select('*')
+      .eq('code', normalized)
+      .maybeSingle();
+
+    if (error) {
+      return getVipKeyByCode(normalized);
+    }
+
+    if (!data) {
+      removeLocalVipKeyCache(normalized);
+      return null;
+    }
+
+    const record = mapSupabaseRowToVipKey(data as SupabaseVipKeyRow);
+    upsertLocalVipKeyCache(record);
+    return record;
+  } catch {
+    return getVipKeyByCode(normalized);
+  }
+}
+
+export async function createVipKeyRecordRemote(
+  folderQuota: number,
+  customCode: string,
+  note?: string
+): Promise<{ success: boolean; record?: VipKeyRecord; error?: string }> {
+  const normalizedCode = customCode.trim().toUpperCase().replace(/\s+/g, '');
+
+  if (normalizedCode.length < 4 || normalizedCode.length > 16) {
+    return {
+      success: false,
+      error: 'Kòd VIP la dwe genyen ant 4 ak 16 karaktè (egzanp: W#84K2 oswa W*94K#).',
+    };
+  }
+
+  try {
+    const { data: existingRow } = await supabase
+      .from('vip_keys')
+      .select('code')
+      .eq('code', normalizedCode)
+      .maybeSingle();
+
+    if (existingRow) {
+      return {
+        success: false,
+        error: `Kòd "${normalizedCode}" deja egziste. Chanje kòd la oswa jenere yon lòt.`,
+      };
+    }
+
+    const newRecord: VipKeyRecord = {
+      code: normalizedCode,
+      totalFolders: folderQuota,
+      remainingFolders: folderQuota,
+      downloadedPackIds: [],
+      createdAt: Date.now(),
+      burned: false,
+      note: note?.trim() || undefined,
+    };
+
+    const { data, error } = await supabase
+      .from('vip_keys')
+      .insert(mapVipKeyToSupabaseRow(newRecord))
+      .select('*')
+      .single();
+
+    if (!error && data) {
+      const saved = mapSupabaseRowToVipKey(data as SupabaseVipKeyRow);
+      upsertLocalVipKeyCache(saved);
+      return { success: true, record: saved };
+    }
+
+    if (error && error.code === '23505') {
+      return {
+        success: false,
+        error: `Kòd "${normalizedCode}" deja egziste. Chanje kòd la oswa jenere yon lòt.`,
+      };
+    }
+
+    // Fallback to local cache if schema has not been initialized yet
+    const localRes = createVipKeyRecord(folderQuota, normalizedCode, note);
+    return localRes;
+  } catch {
+    return createVipKeyRecord(folderQuota, normalizedCode, note);
+  }
+}
+
+export async function deleteVipKeyRecordRemote(code: string): Promise<void> {
+  const normalized = code.trim().toUpperCase();
+  removeLocalVipKeyCache(normalized);
+  try {
+    await supabase.from('vip_keys').delete().eq('code', normalized);
+  } catch {
+    // ignore network errors cleanly
+  }
+}
+
+export async function validateVipKeyCodeRemote(rawCode: string): Promise<{
+  status: 'valid' | 'burned' | 'invalid';
+  record?: VipKeyRecord;
+  error?: string;
+}> {
+  const normalized = rawCode.trim().toUpperCase();
+  if (!normalized) {
+    return {
+      status: 'invalid',
+      error: 'Tanpri antre Kòd VIP ou a anvan ou klike sou bouton an.',
+    };
+  }
+
+  const deviceToken = getOrCreateDeviceToken();
+
+  try {
+    // 1. Prefer atomic PostgreSQL RPC for multi-device race safety
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      'validate_and_activate_vip_key',
+      {
+        p_code: normalized,
+        p_device_token: deviceToken,
+      }
+    );
+
+    if (!rpcError && rpcData && typeof rpcData === 'object') {
+      const payload = rpcData as {
+        status: 'valid' | 'burned' | 'invalid';
+        record?: SupabaseVipKeyRow;
+        error?: string;
+      };
+      const record = payload.record ? mapSupabaseRowToVipKey(payload.record) : undefined;
+      if (record) {
+        upsertLocalVipKeyCache(record);
+      }
+      return {
+        status: payload.status,
+        record,
+        error: payload.error,
+      };
+    }
+
+    // 2. Direct PostgREST table query fallback if RPC not yet installed
+    const { data: rowData, error: rowError } = await supabase
+      .from('vip_keys')
+      .select('*')
+      .eq('code', normalized)
+      .maybeSingle();
+
+    if (rowError) {
+      return validateVipKeyCode(normalized);
+    }
+
+    if (!rowData) {
+      // Check local cache in case key was created offline before SQL setup
+      const localCheck = getVipKeyByCode(normalized);
+      if (localCheck) {
+        return validateVipKeyCode(normalized);
+      }
+      return {
+        status: 'invalid',
+        error:
+          'Kòd VIP sa a pa egziste nan sistèm nan. Verifye Kòd Prepeye ou a oswa achte yon nouvo Kle VIP otomatik anba a.',
+      };
+    }
+
+    const record = mapSupabaseRowToVipKey(rowData as SupabaseVipKeyRow);
+
+    if (record.burned || record.remainingFolders <= 0) {
+      upsertLocalVipKeyCache(record);
+      return {
+        status: 'burned',
+        record,
+        error: '🚫 KÒD SA A DEJA SÈVI / EKSPIRE',
+      };
+    }
+
+    if (record.activatedDeviceToken && record.activatedDeviceToken !== deviceToken) {
+      return {
+        status: 'burned',
+        record,
+        error: '🚫 KÒD SA A DEJA SÈVI / EKSPIRE',
+      };
+    }
+
+    if (!record.activatedAt || !record.activatedDeviceToken) {
+      const now = Date.now();
+      const { data: updatedRow } = await supabase
+        .from('vip_keys')
+        .update({
+          activated_at: now,
+          activated_device_token: deviceToken,
+        })
+        .eq('code', record.code)
+        .select('*')
+        .single();
+
+      const activatedRecord = updatedRow
+        ? mapSupabaseRowToVipKey(updatedRow as SupabaseVipKeyRow)
+        : { ...record, activatedAt: now, activatedDeviceToken: deviceToken };
+
+      upsertLocalVipKeyCache(activatedRecord);
+      return { status: 'valid', record: activatedRecord };
+    }
+
+    upsertLocalVipKeyCache(record);
+    return { status: 'valid', record };
+  } catch {
+    return validateVipKeyCode(normalized);
+  }
+}
+
+export async function consumeFolderCreditRemote(
+  code: string,
+  packId: string
+): Promise<{
+  allowed: boolean;
+  updatedRecord: VipKeyRecord | null;
+  wasAlreadyDownloaded: boolean;
+  justExhausted: boolean;
+}> {
+  const normalized = code.trim().toUpperCase();
+
+  try {
+    // 1. Atomic PostgreSQL RPC decrement (protects concurrent phone/desktop downloads)
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      'consume_vip_folder_credit',
+      {
+        p_code: normalized,
+        p_pack_id: packId,
+      }
+    );
+
+    if (!rpcError && rpcData && typeof rpcData === 'object') {
+      const payload = rpcData as {
+        allowed: boolean;
+        updated_record?: SupabaseVipKeyRow | null;
+        was_already_downloaded?: boolean;
+        just_exhausted?: boolean;
+      };
+      const updatedRecord = payload.updated_record
+        ? mapSupabaseRowToVipKey(payload.updated_record)
+        : null;
+      if (updatedRecord) {
+        upsertLocalVipKeyCache(updatedRecord);
+      }
+      return {
+        allowed: Boolean(payload.allowed),
+        updatedRecord,
+        wasAlreadyDownloaded: Boolean(payload.was_already_downloaded),
+        justExhausted: Boolean(payload.just_exhausted),
+      };
+    }
+
+    // 2. Direct PostgREST table fallback
+    const { data: rowData, error: rowError } = await supabase
+      .from('vip_keys')
+      .select('*')
+      .eq('code', normalized)
+      .maybeSingle();
+
+    if (rowError || !rowData) {
+      return consumeFolderCredit(normalized, packId);
+    }
+
+    const current = mapSupabaseRowToVipKey(rowData as SupabaseVipKeyRow);
+    const alreadyDownloaded = current.downloadedPackIds.includes(packId);
+
+    if (current.burned || current.remainingFolders <= 0) {
+      upsertLocalVipKeyCache(current);
+      return {
+        allowed: false,
+        updatedRecord: current,
+        wasAlreadyDownloaded: alreadyDownloaded,
+        justExhausted: true,
+      };
+    }
+
+    const isUnlimited = current.totalFolders >= 999;
+    const nextRemaining =
+      isUnlimited || alreadyDownloaded
+        ? current.remainingFolders
+        : Math.max(0, current.remainingFolders - 1);
+    const nextDownloaded = alreadyDownloaded
+      ? current.downloadedPackIds
+      : [...current.downloadedPackIds, packId];
+    const isNowBurned = !isUnlimited && nextRemaining === 0;
+    const burnedAt = isNowBurned ? Date.now() : current.burnedAt;
+
+    const { data: updatedRow } = await supabase
+      .from('vip_keys')
+      .update({
+        remaining_folders: nextRemaining,
+        downloaded_pack_ids: nextDownloaded,
+        burned: isNowBurned,
+        burned_at: burnedAt ?? null,
+      })
+      .eq('code', current.code)
+      .select('*')
+      .single();
+
+    const updatedRecord = updatedRow
+      ? mapSupabaseRowToVipKey(updatedRow as SupabaseVipKeyRow)
+      : {
+          ...current,
+          remainingFolders: nextRemaining,
+          downloadedPackIds: nextDownloaded,
+          burned: isNowBurned,
+          burnedAt,
+        };
+
+    upsertLocalVipKeyCache(updatedRecord);
+
+    return {
+      allowed: true,
+      updatedRecord,
+      wasAlreadyDownloaded: alreadyDownloaded,
+      justExhausted: !alreadyDownloaded && isNowBurned,
+    };
+  } catch {
+    return consumeFolderCredit(normalized, packId);
+  }
+}
+
+export function subscribeVipKeysRealtime(onChange: () => void): () => void {
+  const channel = supabase
+    .channel(`vip_keys_admin_${Math.random().toString(36).slice(2, 8)}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'vip_keys' },
+      () => {
+        onChange();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
+export function subscribeSingleVipKeyRealtime(
+  rawCode: string,
+  onRecordChanged: (record: VipKeyRecord | null) => void
+): () => void {
+  const code = rawCode.trim().toUpperCase();
+  if (!code) return () => {};
+
+  const channel = supabase
+    .channel(`vip_key_${code}_${Math.random().toString(36).slice(2, 8)}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'vip_keys',
+        filter: `code=eq.${code}`,
+      },
+      (payload) => {
+        if (payload.eventType === 'DELETE') {
+          removeLocalVipKeyCache(code);
+          onRecordChanged(null);
+          return;
+        }
+        if (payload.new) {
+          const rec = mapSupabaseRowToVipKey(payload.new as SupabaseVipKeyRow);
+          upsertLocalVipKeyCache(rec);
+          onRecordChanged(rec);
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
   };
 }
 

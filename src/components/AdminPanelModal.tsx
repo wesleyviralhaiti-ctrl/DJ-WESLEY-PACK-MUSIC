@@ -30,6 +30,8 @@ import {
   Smartphone,
   Clock,
   ExternalLink,
+  Users,
+  Bell,
 } from 'lucide-react';
 import {
   COMING_SOON_GENRE_PRESETS,
@@ -45,9 +47,11 @@ import {
   activateComingSoonPack,
   computeDefaultHotCues,
   createComingSoonPack,
-  createVipKeyRecord,
+  createVipKeyRecordRemote,
   deletePackById,
+  deleteVipKeyRecordRemote,
   exportCurrentFoldersJson,
+  fetchAllVipKeysRemote,
   formatZipFolderFilename,
   generateShortSecretCode,
   getFolderColorConfig,
@@ -61,10 +65,10 @@ import {
   resolveTrackColor,
   resolveTrackHotCues,
   restoreDemoPacks,
-  saveAllVipKeys,
   saveFolderColorConfig,
   saveFolderCuesConfig,
   slugifyPackTitle,
+  subscribeVipKeysRealtime,
   upsertCustomPack,
 } from '../data/musicPacks';
 import { ZipFilenameText } from './ZipFilenameText';
@@ -75,15 +79,40 @@ import {
   saveCheckoutConfig,
 } from '../data/checkoutConfig';
 import {
-  approvePaymentOrder,
-  deletePaymentOrder,
+  approvePaymentOrderRemote,
+  deletePaymentOrderRemote,
+  fetchPaymentOrdersRemote,
+  insertNatcashSmsReceiptRemote,
   isValidTronTxHash,
   loadPaymentOrders,
   ORDERS_UPDATED_EVENT,
   PAYMENT_ORDERS_STORAGE_KEY,
   PaymentOrder,
-  rejectPaymentOrder,
+  rejectPaymentOrderRemote,
+  subscribeAllPaymentsRealtime,
 } from '../data/paymentOrders';
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../lib/supabase';
+import { getCountryByCode } from '../data/countries';
+import {
+  VisitorProfile,
+  VISITORS_CACHE_STORAGE_KEY,
+  VISITORS_UPDATED_EVENT,
+  deleteVisitorRecordRemote,
+  fetchAllVisitorsRemote,
+  isVisitorCurrentlyOnline,
+  loadVisitorsCache,
+  subscribeVisitorsRealtime,
+} from '../data/visitors';
+import {
+  PACK_REQUESTS_CACHE_STORAGE_KEY,
+  PACK_REQUESTS_UPDATED_EVENT,
+  PackRequestRecord,
+  deletePackRequestRemote,
+  fetchAllPackRequestsRemote,
+  loadPackRequestsCache,
+  subscribePackRequestsRealtime,
+  summarizeTopRequestedPacks,
+} from '../data/packRequests';
 import {
   analyzeMp3FileForHotCues,
   clearUploadedMp3sForPack,
@@ -137,7 +166,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'packs' | 'colors' | 'keys' | 'orders'>('packs');
+  const [activeTab, setActiveTab] = useState<
+    'packs' | 'colors' | 'keys' | 'orders' | 'visitors' | 'requests'
+  >('packs');
 
   // Top Full-Folder Dropzone & Coming Soon Creation State
   const [createAsComingSoon, setCreateAsComingSoon] = useState(false);
@@ -206,6 +237,27 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [orderFilter, setOrderFilter] = useState<'all' | 'pending' | 'approved'>('all');
   const [orderActionBanner, setOrderActionBanner] = useState<string | null>(null);
   const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
+  const [approvingOrderId, setApprovingOrderId] = useState<string | null>(null);
+  const [isCreatingKey, setIsCreatingKey] = useState<boolean>(false);
+  const [smsReceiptTxId, setSmsReceiptTxId] = useState<string>('');
+  const [smsReceiptAmount, setSmsReceiptAmount] = useState<string>('500');
+  const [isSavingSmsReceipt, setIsSavingSmsReceipt] = useState<boolean>(false);
+  const [smsReceiptError, setSmsReceiptError] = useState<string | null>(null);
+  const [showSmsWebhookGuide, setShowSmsWebhookGuide] = useState<boolean>(false);
+
+  // Live Visitors & Verified Phone Numbers Directory
+  const [visitors, setVisitors] = useState<VisitorProfile[]>(() => loadVisitorsCache());
+  const [visitorFilter, setVisitorFilter] = useState<'all' | 'online'>('all');
+  const [visitorSearch, setVisitorSearch] = useState<string>('');
+  const [copiedVisitorPhoneId, setCopiedVisitorPhoneId] = useState<string | null>(null);
+  const [onlineNowMs, setOnlineNowMs] = useState<number>(() => Date.now());
+
+  // Customer Coming-Soon Pack Requests ("🔔 Mande Pake Sa a")
+  const [packRequests, setPackRequests] = useState<PackRequestRecord[]>(() =>
+    loadPackRequestsCache()
+  );
+  const [requestSearch, setRequestSearch] = useState<string>('');
+  const [copiedRequestId, setCopiedRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && isAuthenticated) {
@@ -218,6 +270,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       setCheckoutDraftConfig(loadCheckoutConfig());
       setCheckoutUrlError(null);
       setPaymentOrders(loadPaymentOrders());
+      setVisitors(loadVisitorsCache());
+      setPackRequests(loadPackRequestsCache());
+      setOnlineNowMs(Date.now());
+
+      void fetchAllVipKeysRemote().then((remoteKeys) => setKeys(remoteKeys));
+      void fetchPaymentOrdersRemote().then((remoteOrders) => setPaymentOrders(remoteOrders));
+      void fetchAllVisitorsRemote().then((remoteVisitors) => setVisitors(remoteVisitors));
+      void fetchAllPackRequestsRemote().then((remoteReqs) => setPackRequests(remoteReqs));
     }
     if (!isOpen) {
       cueAuditionPlayer.stop();
@@ -227,25 +287,76 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     }
   }, [isOpen, isAuthenticated, patternPrefix, selectedPackId]);
 
-  // Keep payment orders live-updated while Admin VIP is open
+  // Keep payment orders, VIP keys, live visitors & pack requests synced via Supabase Realtime
   useEffect(() => {
     if (!isOpen || !isAuthenticated) return;
-    const refreshOrders = () => {
+
+    const refreshFromSupabase = async () => {
+      const [remoteOrders, remoteKeys, remoteVisitors, remoteRequests] = await Promise.all([
+        fetchPaymentOrdersRemote(),
+        fetchAllVipKeysRemote(),
+        fetchAllVisitorsRemote(),
+        fetchAllPackRequestsRemote(),
+      ]);
+      setPaymentOrders(remoteOrders);
+      setKeys(remoteKeys);
+      setVisitors(remoteVisitors);
+      setPackRequests(remoteRequests);
+      setOnlineNowMs(Date.now());
+    };
+
+    const unsubscribePayments = subscribeAllPaymentsRealtime(() => {
+      void fetchPaymentOrdersRemote().then((remoteOrders) => setPaymentOrders(remoteOrders));
+    });
+    const unsubscribeKeys = subscribeVipKeysRealtime(() => {
+      void fetchAllVipKeysRemote().then((remoteKeys) => setKeys(remoteKeys));
+    });
+    const unsubscribeVisitors = subscribeVisitorsRealtime(() => {
+      void fetchAllVisitorsRemote().then((remoteVisitors) => {
+        setVisitors(remoteVisitors);
+        setOnlineNowMs(Date.now());
+      });
+    });
+    const unsubscribeRequests = subscribePackRequestsRealtime(() => {
+      void fetchAllPackRequestsRemote().then((remoteRequests) => setPackRequests(remoteRequests));
+    });
+
+    const onLocalSync = () => {
       setPaymentOrders(loadPaymentOrders());
       setKeys(loadAllVipKeys());
+      setVisitors(loadVisitorsCache());
+      setPackRequests(loadPackRequestsCache());
     };
     const onStorage = (e: StorageEvent) => {
-      if (e.key === PAYMENT_ORDERS_STORAGE_KEY || e.key === null) {
-        refreshOrders();
+      if (
+        e.key === PAYMENT_ORDERS_STORAGE_KEY ||
+        e.key === VISITORS_CACHE_STORAGE_KEY ||
+        e.key === PACK_REQUESTS_CACHE_STORAGE_KEY ||
+        e.key === null
+      ) {
+        onLocalSync();
       }
     };
+
+    void refreshFromSupabase();
     window.addEventListener('storage', onStorage);
-    window.addEventListener(ORDERS_UPDATED_EVENT, refreshOrders);
-    const poll = window.setInterval(refreshOrders, 2000);
+    window.addEventListener(ORDERS_UPDATED_EVENT, onLocalSync);
+    window.addEventListener(VISITORS_UPDATED_EVENT, onLocalSync);
+    window.addEventListener(PACK_REQUESTS_UPDATED_EVENT, onLocalSync);
+    const poll = window.setInterval(() => void refreshFromSupabase(), 6000);
+    const onlineClock = window.setInterval(() => setOnlineNowMs(Date.now()), 10_000);
+
     return () => {
+      unsubscribePayments();
+      unsubscribeKeys();
+      unsubscribeVisitors();
+      unsubscribeRequests();
       window.removeEventListener('storage', onStorage);
-      window.removeEventListener(ORDERS_UPDATED_EVENT, refreshOrders);
+      window.removeEventListener(ORDERS_UPDATED_EVENT, onLocalSync);
+      window.removeEventListener(VISITORS_UPDATED_EVENT, onLocalSync);
+      window.removeEventListener(PACK_REQUESTS_UPDATED_EVENT, onLocalSync);
       window.clearInterval(poll);
+      window.clearInterval(onlineClock);
     };
   }, [isOpen, isAuthenticated]);
 
@@ -270,6 +381,55 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       return title.includes(q) || artist.includes(q) || String(t.number).includes(q);
     });
   }, [selectedPack, trackSearch, draftCuesConfig]);
+
+  const pendingOrdersCount = useMemo(
+    () => paymentOrders.filter((o) => o.status === 'pending').length,
+    [paymentOrders]
+  );
+
+  const filteredOrders = useMemo(() => {
+    if (orderFilter === 'pending') return paymentOrders.filter((o) => o.status === 'pending');
+    if (orderFilter === 'approved') return paymentOrders.filter((o) => o.status === 'approved');
+    return paymentOrders;
+  }, [paymentOrders, orderFilter]);
+
+  const onlineVisitorsCount = useMemo(
+    () => visitors.filter((v) => isVisitorCurrentlyOnline(v, onlineNowMs)).length,
+    [visitors, onlineNowMs]
+  );
+
+  const filteredVisitors = useMemo(() => {
+    const q = visitorSearch.trim().toLowerCase();
+    return visitors.filter((v) => {
+      if (visitorFilter === 'online' && !isVisitorCurrentlyOnline(v, onlineNowMs)) {
+        return false;
+      }
+      if (!q) return true;
+      return (
+        v.fullName.toLowerCase().includes(q) ||
+        v.country.toLowerCase().includes(q) ||
+        v.phoneNumber.toLowerCase().includes(q)
+      );
+    });
+  }, [visitors, visitorFilter, visitorSearch, onlineNowMs]);
+
+  const topRequestedPacks = useMemo(
+    () => summarizeTopRequestedPacks(packRequests),
+    [packRequests]
+  );
+
+  const filteredPackRequests = useMemo(() => {
+    const q = requestSearch.trim().toLowerCase();
+    if (!q) return packRequests;
+    return packRequests.filter(
+      (r) =>
+        r.zipFilename.toLowerCase().includes(q) ||
+        r.visitorName.toLowerCase().includes(q) ||
+        r.country.toLowerCase().includes(q) ||
+        r.phoneNumber.toLowerCase().includes(q) ||
+        r.genre.toLowerCase().includes(q)
+    );
+  }, [packRequests, requestSearch]);
 
   if (!isOpen) return null;
 
@@ -302,22 +462,25 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setCustomCodeInput(generateShortSecretCode(prefixToUse, keys));
   };
 
-  const handleCreateKey = (e: React.FormEvent) => {
+  const handleCreateKey = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (activeQuota < 1) return;
+    if (activeQuota < 1 || isCreatingKey) return;
 
     const codeToSave =
       customCodeInput.trim() !== ''
         ? customCodeInput
         : generateShortSecretCode(patternPrefix, keys);
 
-    const result = createVipKeyRecord(activeQuota, codeToSave, clientNote);
+    setIsCreatingKey(true);
+    const result = await createVipKeyRecordRemote(activeQuota, codeToSave, clientNote);
+    setIsCreatingKey(false);
+
     if (!result.success || !result.record) {
       setCreateError(result.error ?? 'Pa kapab kreye kòd la.');
       return;
     }
 
-    const updated = loadAllVipKeys();
+    const updated = await fetchAllVipKeysRemote();
     setKeys(updated);
     setLastCreatedCode(result.record.code);
     setCreateError(null);
@@ -379,49 +542,47 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     window.setTimeout(() => setCheckoutSaveBanner(null), 3500);
   };
 
-  const handleDeleteKey = (code: string) => {
-    const updated = loadAllVipKeys().filter((k) => k.code !== code);
-    saveAllVipKeys(updated);
+  const handleDeleteKey = async (code: string) => {
+    await deleteVipKeyRecordRemote(code);
+    const updated = await fetchAllVipKeysRemote();
     setKeys(updated);
     onKeysChanged();
   };
 
-  const pendingOrdersCount = useMemo(
-    () => paymentOrders.filter((o) => o.status === 'pending').length,
-    [paymentOrders]
-  );
+  const handleApproveOrder = async (orderId: string) => {
+    if (approvingOrderId) return;
+    setApprovingOrderId(orderId);
+    const res = await approvePaymentOrderRemote(orderId, 'admin');
+    setApprovingOrderId(null);
 
-  const filteredOrders = useMemo(() => {
-    if (orderFilter === 'pending') return paymentOrders.filter((o) => o.status === 'pending');
-    if (orderFilter === 'approved') return paymentOrders.filter((o) => o.status === 'approved');
-    return paymentOrders;
-  }, [paymentOrders, orderFilter]);
-
-  const handleApproveOrder = (orderId: string) => {
-    const res = approvePaymentOrder(orderId, 'admin');
     if (!res.success || !res.order) {
       setOrderActionBanner(res.error ?? 'Pa kapab valide kòmand lan.');
       return;
     }
-    setPaymentOrders(loadPaymentOrders());
-    setKeys(loadAllVipKeys());
+
+    const [remoteOrders, remoteKeys] = await Promise.all([
+      fetchPaymentOrdersRemote(),
+      fetchAllVipKeysRemote(),
+    ]);
+    setPaymentOrders(remoteOrders);
+    setKeys(remoteKeys);
     onKeysChanged();
     setOrderActionBanner(
-      `✅ Kòmand ${res.order.id} valide! Kle VIP (${res.order.issuedVipKey}) kreye & voye sou ekran kliyan an touswit.`
+      `✅ Kòmand ${res.order.id} valide! Kle VIP (${res.order.issuedVipKey}) anrejistre sou Supabase & voye sou telefòn kliyan an touswit.`
     );
     window.setTimeout(() => setOrderActionBanner(null), 5000);
   };
 
-  const handleRejectOrder = (orderId: string) => {
-    rejectPaymentOrder(orderId);
-    setPaymentOrders(loadPaymentOrders());
+  const handleRejectOrder = async (orderId: string) => {
+    await rejectPaymentOrderRemote(orderId);
+    setPaymentOrders(await fetchPaymentOrdersRemote());
     setOrderActionBanner('❌ Peman an make kòm refize. Kliyan an ap kapab korije l.');
     window.setTimeout(() => setOrderActionBanner(null), 4000);
   };
 
-  const handleDeleteOrder = (orderId: string) => {
-    deletePaymentOrder(orderId);
-    setPaymentOrders(loadPaymentOrders());
+  const handleDeleteOrder = async (orderId: string) => {
+    await deletePaymentOrderRemote(orderId);
+    setPaymentOrders(await fetchPaymentOrdersRemote());
   };
 
   const handleCopyOrderValue = async (id: string, value: string) => {
@@ -430,6 +591,69 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     window.setTimeout(() => {
       setCopiedOrderId((curr) => (curr === id ? null : curr));
     }, 2200);
+  };
+
+  const handleCopyVisitorPhone = async (visitorId: string, phoneNumber: string) => {
+    await copyPlainText(phoneNumber);
+    setCopiedVisitorPhoneId(visitorId);
+    window.setTimeout(() => {
+      setCopiedVisitorPhoneId((curr) => (curr === visitorId ? null : curr));
+    }, 2200);
+  };
+
+  const handleDeleteVisitor = async (visitorId: string) => {
+    await deleteVisitorRecordRemote(visitorId);
+    setVisitors(await fetchAllVisitorsRemote());
+  };
+
+  const handleCopyRequestPhone = async (reqId: string, phoneNumber: string) => {
+    await copyPlainText(phoneNumber);
+    setCopiedRequestId(reqId);
+    window.setTimeout(() => {
+      setCopiedRequestId((curr) => (curr === reqId ? null : curr));
+    }, 2200);
+  };
+
+  const handleDeletePackRequest = async (reqId: string) => {
+    await deletePackRequestRemote(reqId);
+    setPackRequests(await fetchAllPackRequestsRemote());
+  };
+
+  const handleSaveNatcashSmsReceipt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSavingSmsReceipt) return;
+    setSmsReceiptError(null);
+    setIsSavingSmsReceipt(true);
+    const parsedAmount = Number(smsReceiptAmount) || 0;
+    const res = await insertNatcashSmsReceiptRemote({
+      txId: smsReceiptTxId,
+      amountHtg: parsedAmount,
+    });
+    setIsSavingSmsReceipt(false);
+
+    if (!res.success) {
+      setSmsReceiptError(res.error ?? 'Pa kapab anrejistre resi SMS Natcash la.');
+      return;
+    }
+
+    setSmsReceiptTxId('');
+    const [remoteOrders, remoteKeys] = await Promise.all([
+      fetchPaymentOrdersRemote(),
+      fetchAllVipKeysRemote(),
+    ]);
+    setPaymentOrders(remoteOrders);
+    setKeys(remoteKeys);
+    if (res.autoMatchedOrderId) {
+      onKeysChanged();
+      setOrderActionBanner(
+        `✅ Resi Natcash anrejistre & Kòmand ${res.autoMatchedOrderId} valide otomatikman ak Kle VIP!`
+      );
+    } else {
+      setOrderActionBanner(
+        `📩 Resi SMS Natcash (${parsedAmount.toLocaleString('en-US')} HTG) anrejistre — kliyan an ka debloke Kle VIP li otomatikman kounye a.`
+      );
+    }
+    window.setTimeout(() => setOrderActionBanner(null), 5000);
   };
 
   const processWholeMusicFolder = async (
@@ -1114,11 +1338,66 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   </span>
                 )}
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setVisitors(loadVisitorsCache());
+                  setOnlineNowMs(Date.now());
+                  setActiveTab('visitors');
+                  void fetchAllVisitorsRemote().then((remoteVisitors) => setVisitors(remoteVisitors));
+                }}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                  activeTab === 'visitors'
+                    ? 'bg-emerald-500 text-zinc-950'
+                    : 'bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-800'
+                }`}
+              >
+                <Users className="h-4 w-4 shrink-0" />
+                <span>👥 Vizitè &amp; Kliyan An Dirèk</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums ${
+                    activeTab === 'visitors'
+                      ? 'bg-zinc-950 text-emerald-300'
+                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35'
+                  }`}
+                >
+                  🟢 {onlineVisitorsCount}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPackRequests(loadPackRequestsCache());
+                  setActiveTab('requests');
+                  void fetchAllPackRequestsRemote().then((remoteReqs) =>
+                    setPackRequests(remoteReqs)
+                  );
+                }}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                  activeTab === 'requests'
+                    ? 'bg-emerald-500 text-zinc-950'
+                    : 'bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-800'
+                }`}
+              >
+                <Bell className="h-4 w-4 shrink-0" />
+                <span>📩 Demann Pake Kliyan</span>
+                {packRequests.length > 0 && (
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums ${
+                      activeTab === 'requests'
+                        ? 'bg-zinc-950 text-emerald-300'
+                        : 'bg-amber-400 text-zinc-950'
+                    }`}
+                  >
+                    {packRequests.length}
+                  </span>
+                )}
+              </button>
             </div>
 
             <div className="p-6 space-y-6 overflow-y-auto">
               {/* TOP OF ADMIN PANEL: + Kreye Nouvo Folder (Upload Real Folder OR Coming Soon Placeholder) */}
-              {activeTab !== 'orders' && (
+              {activeTab !== 'orders' && activeTab !== 'visitors' && activeTab !== 'requests' && (
               <div className="rounded-2xl border border-zinc-800 bg-[#0E1015] p-5 sm:p-6 space-y-5">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800/80 pb-4">
                   <div className="flex items-center gap-2.5">
@@ -1486,6 +1765,183 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       </div>
                     </div>
 
+                    <form
+                      onSubmit={(e) => void handleSaveNatcashSmsReceipt(e)}
+                      className="rounded-xl bg-[#0B0C10] border border-zinc-800 p-4 space-y-3"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <h4 className="text-xs font-bold text-emerald-300">
+                            📩 Anrejistre Resi SMS Natcash (+509 56568810) pou Auto-Deblokaj
+                          </h4>
+                          <p className="text-[11px] text-zinc-400">
+                            Lè w antre yon Kòd ID Natcash + Montan HTG isit la, kliyan an ap kapab
+                            debloke Kle VIP li otomatikman san w pa bezwen prezan.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                        <div className="sm:col-span-5">
+                          <label
+                            htmlFor="admin-sms-tx-id"
+                            className="block text-[11px] font-medium text-zinc-300 mb-1"
+                          >
+                            Kòd Tranzaksyon (ID) SMS Natcash
+                          </label>
+                          <input
+                            id="admin-sms-tx-id"
+                            type="text"
+                            value={smsReceiptTxId}
+                            onChange={(e) => {
+                              setSmsReceiptTxId(e.target.value.toUpperCase());
+                              if (smsReceiptError) setSmsReceiptError(null);
+                            }}
+                            placeholder="Ex: 9482710583 oswa NC94827105"
+                            className="w-full rounded-lg bg-[#13151B] border border-zinc-700 px-3 py-2 text-xs font-mono text-white placeholder:font-sans placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-3">
+                          <label
+                            htmlFor="admin-sms-htg-amount"
+                            className="block text-[11px] font-medium text-zinc-300 mb-1"
+                          >
+                            Montan HTG Resevwa
+                          </label>
+                          <select
+                            id="admin-sms-htg-amount"
+                            value={smsReceiptAmount}
+                            onChange={(e) => setSmsReceiptAmount(e.target.value)}
+                            className="w-full rounded-lg bg-[#13151B] border border-zinc-700 px-3 py-2 text-xs font-mono text-white focus:border-emerald-500 focus:outline-none"
+                          >
+                            <option value="500">500 HTG (10 Folder)</option>
+                            <option value="1000">1,000 HTG (21 Folder)</option>
+                            <option value="1500">1,500 HTG (36 Folder)</option>
+                            <option value="2000">2,000 HTG (55 Folder)</option>
+                            <option value="7800">7,800 HTG (VIP Ilimite)</option>
+                          </select>
+                        </div>
+
+                        <div className="sm:col-span-4">
+                          <button
+                            type="submit"
+                            disabled={isSavingSmsReceipt || !smsReceiptTxId.trim()}
+                            className="w-full min-h-[36px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-55 px-3 py-2 text-xs font-extrabold text-zinc-950 transition-colors cursor-pointer"
+                          >
+                            <Save className="h-3.5 w-3.5 shrink-0" />
+                            <span>
+                              {isSavingSmsReceipt ? 'Ap anrejistre...' : 'Anrejistre Resi SMS'}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {smsReceiptError && (
+                        <p className="text-xs text-rose-300">{smsReceiptError}</p>
+                      )}
+
+                      <div className="pt-2 border-t border-zinc-800/80">
+                        <button
+                          type="button"
+                          onClick={() => setShowSmsWebhookGuide((v) => !v)}
+                          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-300 hover:text-emerald-200 cursor-pointer"
+                        >
+                          <span>
+                            {showSmsWebhookGuide
+                              ? '▾ Kache Konfigirasyon SMS Webhook / Forwarder'
+                              : '▸ 🔗 SMS Webhook / Forwarder Endpoint (Otomatik pou Telefòn Android)'}
+                          </span>
+                        </button>
+
+                        {showSmsWebhookGuide && (
+                          <div className="mt-3 rounded-lg bg-[#13151B] border border-zinc-700/80 p-3.5 space-y-2.5 text-[11px] text-zinc-300">
+                            <p className="leading-relaxed">
+                              Enstale yon app{' '}
+                              <strong className="text-white">SMS Forwarder / MacroDroid</strong> sou
+                              telefòn ki resevwa SMS Natcash (+509 56568810) yo epi voye yon{' '}
+                              <span className="font-mono text-emerald-300">POST</span> otomatik sou
+                              endpoint Supabase sa a pou kwaze-verifye tout SMS Natcash an tan reyèl:
+                            </p>
+
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-semibold text-zinc-400">
+                                  POST Endpoint URL (Raw SMS Parser RPC):
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleCopyOrderValue(
+                                      'webhook-url',
+                                      `${SUPABASE_URL}/rest/v1/rpc/ingest_natcash_sms_webhook`
+                                    )
+                                  }
+                                  className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-bold text-emerald-300 cursor-pointer"
+                                >
+                                  {copiedOrderId === 'webhook-url' ? '✔ Kopye!' : 'Kopye URL'}
+                                </button>
+                              </div>
+                              <div className="rounded bg-[#0B0C10] border border-zinc-800 px-2.5 py-1.5 font-mono text-[10px] text-emerald-200 break-all select-all">
+                                {SUPABASE_URL}/rest/v1/rpc/ingest_natcash_sms_webhook
+                              </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-semibold text-zinc-400">
+                                  HTTP Headers:
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleCopyOrderValue(
+                                      'webhook-headers',
+                                      `apikey: ${SUPABASE_ANON_KEY}\nAuthorization: Bearer ${SUPABASE_ANON_KEY}\nContent-Type: application/json`
+                                    )
+                                  }
+                                  className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-bold text-emerald-300 cursor-pointer"
+                                >
+                                  {copiedOrderId === 'webhook-headers'
+                                    ? '✔ Kopye!'
+                                    : 'Kopye Headers'}
+                                </button>
+                              </div>
+                              <pre className="rounded bg-[#0B0C10] border border-zinc-800 px-2.5 py-1.5 font-mono text-[10px] text-zinc-200 overflow-x-auto select-all">{`apikey: ${SUPABASE_ANON_KEY}\nAuthorization: Bearer ${SUPABASE_ANON_KEY}\nContent-Type: application/json`}</pre>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-semibold text-zinc-400">
+                                  JSON Body Template:
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleCopyOrderValue(
+                                      'webhook-body',
+                                      JSON.stringify(
+                                        {
+                                          p_raw_sms: '%sms_body%',
+                                          p_sender_phone: '%from%',
+                                        },
+                                        null,
+                                        2
+                                      )
+                                    )
+                                  }
+                                  className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-bold text-emerald-300 cursor-pointer"
+                                >
+                                  {copiedOrderId === 'webhook-body' ? '✔ Kopye!' : 'Kopye JSON'}
+                                </button>
+                              </div>
+                              <pre className="rounded bg-[#0B0C10] border border-zinc-800 px-2.5 py-1.5 font-mono text-[10px] text-amber-200 overflow-x-auto select-all">{`{\n  "p_raw_sms": "%sms_body%",\n  "p_sender_phone": "%from%"\n}`}</pre>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </form>
+
                     {orderActionBanner && (
                       <div
                         role="status"
@@ -1694,17 +2150,22 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   {!isApproved && (
                                     <button
                                       type="button"
-                                      onClick={() => handleApproveOrder(order.id)}
-                                      className="inline-flex items-center justify-center gap-1.5 min-h-[42px] px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-display font-extrabold text-xs whitespace-nowrap transition-colors cursor-pointer"
+                                      disabled={approvingOrderId === order.id}
+                                      onClick={() => void handleApproveOrder(order.id)}
+                                      className="inline-flex items-center justify-center gap-1.5 min-h-[42px] px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-65 text-zinc-950 font-display font-extrabold text-xs whitespace-nowrap transition-colors cursor-pointer"
                                     >
-                                      <span>✔ Valide &amp; Voye Kle VIP</span>
+                                      <span>
+                                        {approvingOrderId === order.id
+                                          ? '⏳ Ap voye Kle VIP...'
+                                          : '✔ Valide & Voye Kle VIP'}
+                                      </span>
                                     </button>
                                   )}
 
                                   {isPending && (
                                     <button
                                       type="button"
-                                      onClick={() => handleRejectOrder(order.id)}
+                                      onClick={() => void handleRejectOrder(order.id)}
                                       className="inline-flex items-center justify-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/40 hover:bg-rose-500/25 text-rose-300 text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer"
                                     >
                                       <span>✖ Refize</span>
@@ -1713,7 +2174,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                                   <button
                                     type="button"
-                                    onClick={() => handleDeleteOrder(order.id)}
+                                    onClick={() => void handleDeleteOrder(order.id)}
                                     aria-label={`Efase kòmand ${order.id}`}
                                     className="inline-flex items-center justify-center gap-1.5 min-h-[34px] px-3 py-1.5 rounded-xl bg-[#0B0C10] border border-zinc-800 hover:border-rose-500/40 text-zinc-400 hover:text-rose-300 text-xs whitespace-nowrap transition-colors cursor-pointer"
                                   >
@@ -1721,6 +2182,308 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                     <span>Efase</span>
                                   </button>
                                 </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : activeTab === 'visitors' ? (
+                /* 👥 Vizitè & Kliyan An Dirèk — Live Visitors Directory synced via Supabase */
+                <div className="space-y-5">
+                  <div className="rounded-xl bg-[#0E1015] border border-emerald-500/30 p-5 space-y-4">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-display text-base sm:text-lg font-bold text-white">
+                          👥 Vizitè &amp; Kliyan An Dirèk (Live)
+                        </h3>
+                        <p className="text-xs text-zinc-400 mt-1">
+                          Lis tout vizitè ki verifye non yo, peyi yo, ak vrè nimewo telefòn yo
+                          anvan yo antre sou sit la — senkronize an tan reyèl ak Supabase.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setVisitorFilter('all')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                            visitorFilter === 'all'
+                              ? 'bg-emerald-500 text-zinc-950 border-emerald-400'
+                              : 'bg-[#0B0C10] text-zinc-300 border-zinc-800 hover:border-zinc-600'
+                          }`}
+                        >
+                          Tout ({visitors.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setVisitorFilter('online')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                            visitorFilter === 'online'
+                              ? 'bg-emerald-500 text-zinc-950 border-emerald-400'
+                              : 'bg-[#0B0C10] text-zinc-300 border-zinc-800 hover:border-zinc-600'
+                          }`}
+                        >
+                          🟢 Online ({onlineVisitorsCount})
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="relative">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={visitorSearch}
+                        onChange={(e) => setVisitorSearch(e.target.value)}
+                        placeholder="🔍 Chèche non kliyan, peyi, oswa nimewo telefòn..."
+                        className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {filteredVisitors.length === 0 ? (
+                      <div className="rounded-xl border border-zinc-800 bg-[#0B0C10] p-8 text-center space-y-2">
+                        <Users className="h-9 w-9 text-zinc-600 mx-auto" />
+                        <p className="text-sm font-semibold text-zinc-200">
+                          {visitorFilter === 'online'
+                            ? 'Pa gen okenn vizitè ki Online kounye a.'
+                            : 'Pa gen okenn vizitè anrejistre ankò.'}
+                        </p>
+                        <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                          Chak fwa yon vizitè antre non li, peyi li, ak nimewo telefòn li nan pòtay
+                          aksè a, li ap parèt isit la otomatikman ak estati Online li.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {filteredVisitors.map((visitor) => {
+                          const online = isVisitorCurrentlyOnline(visitor, onlineNowMs);
+                          const country = getCountryByCode(visitor.countryCode);
+
+                          return (
+                            <div
+                              key={visitor.id}
+                              className={`rounded-xl border p-4 transition-colors ${
+                                online
+                                  ? 'bg-emerald-500/[0.06] border-emerald-500/45'
+                                  : 'bg-[#0B0C10] border-zinc-800'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 space-y-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span
+                                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-extrabold border ${
+                                        online
+                                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/45'
+                                          : 'bg-zinc-900 text-zinc-400 border-zinc-700'
+                                      }`}
+                                    >
+                                      <span aria-hidden="true">{online ? '🟢' : '🔴'}</span>
+                                      <span>{online ? 'Online' : 'Offline'}</span>
+                                    </span>
+                                    <span className="text-[11px] text-zinc-500">
+                                      {new Date(visitor.lastSeenAt).toLocaleString()}
+                                    </span>
+                                  </div>
+
+                                  <h4 className="font-display text-sm sm:text-base font-bold text-white truncate">
+                                    {visitor.fullName}
+                                  </h4>
+
+                                  <p className="text-xs text-zinc-300 flex items-center gap-1.5">
+                                    <span className="text-base leading-none" aria-hidden="true">
+                                      {country.flag}
+                                    </span>
+                                    <span>
+                                      {country.name} ({country.code})
+                                    </span>
+                                  </p>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDeleteVisitor(visitor.id)}
+                                  aria-label={`Efase vizitè ${visitor.fullName}`}
+                                  className="p-1.5 rounded-lg bg-[#13151B] border border-zinc-800 hover:border-rose-500/40 text-zinc-500 hover:text-rose-300 transition-colors cursor-pointer shrink-0"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+
+                              <div className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-[#13151B] border border-zinc-800 px-3 py-2">
+                                <div className="min-w-0">
+                                  <span className="block text-[10px] text-zinc-500">
+                                    Nimewo Telefòn Verifye
+                                  </span>
+                                  <span className="font-mono text-xs sm:text-sm font-bold text-emerald-300 select-all">
+                                    {visitor.phoneNumber}
+                                  </span>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleCopyVisitorPhone(visitor.id, visitor.phoneNumber)
+                                  }
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-[11px] font-extrabold whitespace-nowrap transition-colors cursor-pointer shrink-0"
+                                >
+                                  {copiedVisitorPhoneId === visitor.id ? (
+                                    <>
+                                      <Check className="h-3.5 w-3.5" />
+                                      <span>Kopye!</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="h-3.5 w-3.5" />
+                                      <span>Kopye</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : activeTab === 'requests' ? (
+                /* 📩 Demann Pake Kliyan — Most Requested Trending Folders & Individual Visitor Requests */
+                <div className="space-y-5">
+                  <div className="rounded-xl bg-[#0E1015] border border-amber-500/35 p-5 space-y-5">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-display text-base sm:text-lg font-bold text-white">
+                          📩 Demann Pake Kliyan (Ki Pake Yo Plis Mande?)
+                        </h3>
+                        <p className="text-xs text-zinc-400 mt-1">
+                          Chak fwa yon vizitè klike « 🔔 Mande Pake Sa a » sou yon pake An Preparasyon,
+                          demann li ak nimewo telefòn li parèt isit la an tan reyèl.
+                        </p>
+                      </div>
+                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 border border-amber-400/40 px-3 py-1.5 text-xs font-extrabold text-amber-300 shrink-0">
+                        Total Demann: {packRequests.length}
+                      </span>
+                    </div>
+
+                    {/* Top Requested Leaderboard */}
+                    {topRequestedPacks.length > 0 && (
+                      <div className="rounded-xl bg-[#0B0C10] border border-zinc-800 p-4 space-y-3">
+                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-amber-300">
+                          🔥 Klasman Pake Ki Plis Mande Yo (Top Demann)
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                          {topRequestedPacks.slice(0, 9).map((item, idx) => (
+                            <div
+                              key={item.zipFilename}
+                              className="flex items-center justify-between gap-2 rounded-lg bg-[#13151B] border border-zinc-800 px-3 py-2.5"
+                            >
+                              <div className="min-w-0">
+                                <p className="font-mono text-xs font-bold text-white truncate">
+                                  #{idx + 1} · {item.zipFilename}
+                                </p>
+                                <p className="text-[11px] text-zinc-400 truncate">
+                                  {item.genre} ·{' '}
+                                  {item.countries.map((cc) => getCountryByCode(cc).flag).join(' ')}
+                                </p>
+                              </div>
+                              <span className="rounded-full bg-amber-400 text-zinc-950 px-2 py-0.5 text-[11px] font-extrabold tabular-nums shrink-0">
+                                {item.count}x
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Search Bar */}
+                    <div className="relative">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={requestSearch}
+                        onChange={(e) => setRequestSearch(e.target.value)}
+                        placeholder="🔍 Chèche non pake .ZIP, non kliyan, peyi, oswa nimewo telefòn..."
+                        className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-zinc-500 focus:border-amber-400 focus:outline-none"
+                      />
+                    </div>
+
+                    {filteredPackRequests.length === 0 ? (
+                      <div className="rounded-xl border border-zinc-800 bg-[#0B0C10] p-8 text-center space-y-2">
+                        <Bell className="h-9 w-9 text-zinc-600 mx-auto" />
+                        <p className="text-sm font-semibold text-zinc-200">
+                          Poko gen okenn demann pake anrejistre.
+                        </p>
+                        <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                          Lè vizitè yo klike sou « 🔔 Mande Pake Sa a » sou nenpòt pake An Preparasyon,
+                          w ap wè lis la isit la pou w konnen ki folder pou w upload aprè!
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {filteredPackRequests.map((req) => {
+                          const country = getCountryByCode(req.countryCode);
+                          return (
+                            <div
+                              key={req.id}
+                              className="rounded-xl border border-zinc-800 bg-[#0B0C10] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                            >
+                              <div className="space-y-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-mono text-xs sm:text-sm font-extrabold text-amber-300 break-all">
+                                    📦 {req.zipFilename}
+                                  </span>
+                                  <span className="rounded bg-zinc-900 border border-zinc-800 px-2 py-0.5 text-[10px] font-semibold text-zinc-300">
+                                    {req.genre}
+                                  </span>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-300">
+                                  <span className="font-bold text-white">
+                                    👤 {req.visitorName}
+                                  </span>
+                                  <span>
+                                    {country.flag} {country.name} ({country.code})
+                                  </span>
+                                  <span className="font-mono text-emerald-300 font-semibold">
+                                    📞 {req.phoneNumber}
+                                  </span>
+                                  <span className="text-[11px] text-zinc-500">
+                                    · {new Date(req.createdAt).toLocaleString()}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleCopyRequestPhone(req.id, req.phoneNumber)
+                                  }
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-[11px] font-extrabold whitespace-nowrap transition-colors cursor-pointer"
+                                >
+                                  {copiedRequestId === req.id ? (
+                                    <>
+                                      <Check className="h-3.5 w-3.5" />
+                                      <span>Kopye!</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="h-3.5 w-3.5" />
+                                      <span>Kopye Tel</span>
+                                    </>
+                                  )}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDeletePackRequest(req.id)}
+                                  aria-label={`Efase demann ${req.zipFilename}`}
+                                  className="p-2 rounded-lg bg-[#13151B] border border-zinc-800 hover:border-rose-500/40 text-zinc-400 hover:text-rose-300 transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
                               </div>
                             </div>
                           );
@@ -2008,7 +2771,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 <>
                   {/* Short VIP Code & Folder Quota Generator Form */}
                   <form
-                    onSubmit={handleCreateKey}
+                    onSubmit={(e) => void handleCreateKey(e)}
                     className="rounded-xl bg-[#0E1015] border border-zinc-800 p-5 space-y-5"
                   >
                     <div>
@@ -2193,9 +2956,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       </p>
                       <button
                         type="submit"
-                        className="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-display font-bold text-sm whitespace-nowrap transition-colors cursor-pointer"
+                        disabled={isCreatingKey}
+                        className="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-65 text-zinc-950 font-display font-bold text-sm whitespace-nowrap transition-colors cursor-pointer"
                       >
-                        <span>⚡ Kreye Kle VIP</span>
+                        <span>{isCreatingKey ? '⏳ Ap kreye...' : '⚡ Kreye Kle VIP'}</span>
                       </button>
                     </div>
                   </form>
@@ -2290,7 +3054,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                       </button>
                                       <button
                                         type="button"
-                                        onClick={() => handleDeleteKey(record.code)}
+                                        onClick={() => void handleDeleteKey(record.code)}
                                         aria-label={`Efase kòd ${record.code}`}
                                         className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-zinc-800 transition-colors cursor-pointer"
                                       >

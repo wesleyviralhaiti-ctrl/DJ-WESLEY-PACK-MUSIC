@@ -9,6 +9,9 @@ import {
   LogOut,
   Clock,
   Zap,
+  Bell,
+  CheckCircle2,
+  Flame,
 } from 'lucide-react';
 import {
   ACTIVE_KEY_STORAGE_KEY,
@@ -16,29 +19,50 @@ import {
   FolderPlan,
   MusicPack,
   VipKeyRecord,
-  consumeFolderCredit,
+  consumeFolderCreditRemote,
+  fetchVipKeyByCodeRemote,
   formatZipFolderFilename,
   getAllMusicPacks,
   getFolderColorConfig,
   getFolderCuesConfig,
   getVipKeyByCode,
+  subscribeSingleVipKeyRealtime,
 } from './data/musicPacks';
 import { buildVirtualDjColorZip } from './utils/id3Mp3Packager';
 import { WelcomeVipModal } from './components/WelcomeVipModal';
 import { AdminPanelModal } from './components/AdminPanelModal';
 import { QuotaExhaustedModal } from './components/QuotaExhaustedModal';
 import { DirectCheckoutModal } from './components/DirectCheckoutModal';
+import { VisitorEntryGateModal } from './components/VisitorEntryGateModal';
 import { ZipFilenameText } from './components/ZipFilenameText';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { CountrySelector } from './components/CountrySelector';
-import { loadSelectedCountryCode, saveSelectedCountryCode } from './data/countries';
+import {
+  getCountryByCode,
+  loadSelectedCountryCode,
+  saveSelectedCountryCode,
+} from './data/countries';
+import { buildCountryTrendingComingSoonPacks } from './data/trendingCatalog';
+import {
+  loadRequestedZipNames,
+  submitPackRequestRemote,
+} from './data/packRequests';
+import {
+  VisitorProfile,
+  loadSavedVisitorProfile,
+  markVisitorOfflineKeepalive,
+  sendVisitorHeartbeatRemote,
+} from './data/visitors';
 import {
   ACTIVE_CHECKOUT_ORDER_STORAGE_KEY,
+  fetchPaymentOrderByIdRemote,
   getPaymentOrderById,
   loadActiveCheckoutOrderId,
   ORDERS_UPDATED_EVENT,
   PAYMENT_ORDERS_STORAGE_KEY,
+  PaymentOrder,
   saveActiveCheckoutOrderId,
+  subscribePaymentOrderByIdRealtime,
 } from './data/paymentOrders';
 
 const ADMIN_SESSION_STORAGE_KEY = 'wesley_admin_auth_session_v1';
@@ -72,9 +96,12 @@ export default function App() {
   const [isAdminFreeMode, setIsAdminFreeMode] = useState<boolean>(() =>
     loadAdminAuthenticatedFlag()
   );
+  const [visitorProfile, setVisitorProfile] = useState<VisitorProfile | null>(() =>
+    loadSavedVisitorProfile()
+  );
   const [activeKey, setActiveKey] = useState<VipKeyRecord | null>(() => loadActiveKeyRecord());
   const [isWelcomeOpen, setIsWelcomeOpen] = useState<boolean>(
-    () => !loadActiveKeyRecord() && !loadAdminAuthenticatedFlag()
+    () => Boolean(loadSavedVisitorProfile()) && !loadActiveKeyRecord() && !loadAdminAuthenticatedFlag()
   );
   const [pendingPack, setPendingPack] = useState<MusicPack | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
@@ -92,11 +119,54 @@ export default function App() {
     loadActiveCheckoutOrderId()
   );
   const [isDirectCheckoutOpen, setIsDirectCheckoutOpen] = useState<boolean>(false);
+  const [requestedZips, setRequestedZips] = useState<string[]>(() => loadRequestedZipNames());
+  const [requestingZip, setRequestingZip] = useState<string | null>(null);
 
-  const handleSelectCountry = useCallback((code: string) => {
-    const saved = saveSelectedCountryCode(code);
-    setSelectedCountryCode(saved);
-  }, []);
+  const handleSelectCountry = useCallback(
+    (code: string) => {
+      const saved = saveSelectedCountryCode(code);
+      setSelectedCountryCode(saved);
+      if (visitorProfile) {
+        void sendVisitorHeartbeatRemote(visitorProfile, saved);
+        setVisitorProfile((prev) => (prev ? { ...prev, countryCode: saved } : prev));
+      }
+    },
+    [visitorProfile]
+  );
+
+  // Real-time online presence heartbeat + offline keepalive on tab close
+  useEffect(() => {
+    if (!visitorProfile) return;
+
+    void sendVisitorHeartbeatRemote(visitorProfile, selectedCountryCode);
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void sendVisitorHeartbeatRemote(visitorProfile, selectedCountryCode);
+      }
+    }, 25_000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void sendVisitorHeartbeatRemote(visitorProfile, selectedCountryCode);
+      }
+    };
+
+    const handleUnload = () => {
+      markVisitorOfflineKeepalive(visitorProfile.id);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handleUnload);
+    window.addEventListener('beforeunload', handleUnload);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handleUnload);
+      window.removeEventListener('beforeunload', handleUnload);
+    };
+  }, [visitorProfile?.id, selectedCountryCode]);
 
   const handleStartDirectCheckout = useCallback((plan: FolderPlan) => {
     saveActiveCheckoutOrderId(null);
@@ -112,14 +182,30 @@ export default function App() {
     return getAllMusicPacks();
   }, [customPacksVersion]);
 
-  const activePacksCount = useMemo(
-    () => allPacks.filter((p) => !p.isComingSoon).length,
+  const selectedCountry = useMemo(
+    () => getCountryByCode(selectedCountryCode),
+    [selectedCountryCode]
+  );
+
+  const availablePacks = useMemo(
+    () => allPacks.filter((p) => !p.isComingSoon),
     [allPacks]
   );
-  const comingSoonPacksCount = useMemo(
-    () => allPacks.filter((p) => Boolean(p.isComingSoon)).length,
-    [allPacks]
-  );
+
+  const trendingComingSoonPacks = useMemo(() => {
+    const ownerComingSoon = allPacks.filter((p) => Boolean(p.isComingSoon));
+    const existingKeys = new Set(
+      allPacks.map((p) => p.title.toLowerCase().replace(/\.zip$/i, '').trim())
+    );
+    const dynamicCountryPacks = buildCountryTrendingComingSoonPacks(
+      selectedCountryCode,
+      existingKeys
+    );
+    return [...ownerComingSoon, ...dynamicCountryPacks];
+  }, [allPacks, selectedCountryCode]);
+
+  const activePacksCount = availablePacks.length;
+  const comingSoonPacksCount = trendingComingSoonPacks.length;
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -128,34 +214,102 @@ export default function App() {
     }, 4500);
   }, []);
 
+  const handleRequestComingSoonPack = useCallback(
+    async (pack: MusicPack) => {
+      const zipFilename = formatZipFolderFilename(pack);
+      setRequestingZip(zipFilename);
+      await submitPackRequestRemote({
+        packTitle: pack.title,
+        zipFilename,
+        genre: pack.genre,
+        countryCode: selectedCountryCode,
+      });
+      setRequestingZip(null);
+      setRequestedZips((prev) => (prev.includes(zipFilename) ? prev : [...prev, zipFilename]));
+      showToast('✅ Demann ou an voye bay DJ Wesley! N ap lage pake sa a byento.');
+    },
+    [selectedCountryCode, showToast]
+  );
+
   const syncActiveKeyFromStore = useCallback(() => {
-    setActiveKey((curr) => {
-      if (!curr) return null;
-      const fresh = getVipKeyByCode(curr.code);
+    const code = window.localStorage.getItem(ACTIVE_KEY_STORAGE_KEY);
+    if (!code) {
+      setActiveKey(null);
+      return;
+    }
+    void fetchVipKeyByCodeRemote(code).then((fresh) => {
       if (!fresh || fresh.burned || fresh.remainingFolders <= 0) {
         window.localStorage.removeItem(ACTIVE_KEY_STORAGE_KEY);
-        return null;
+        setActiveKey(null);
+      } else {
+        setActiveKey(fresh);
       }
-      return fresh;
     });
   }, []);
 
-  // Automatically pop the generated short VIP Key straight onto the buyer's screen
-  // the moment Admin VIP clicks "✔ Valide & Voye Kle VIP" (even if the modal was closed).
+  // Subscribe to real-time Supabase changes on the buyer's active VIP Key
+  // so credits & burned/exhausted lock stay exact across all devices
   useEffect(() => {
-    const checkApprovedOrder = () => {
-      const pendingOrderId = loadActiveCheckoutOrderId();
-      if (!pendingOrderId) return;
-      const order = getPaymentOrderById(pendingOrderId);
+    const code = activeKey?.code;
+    if (!code) return;
+
+    void fetchVipKeyByCodeRemote(code).then((fresh) => {
+      if (!fresh || fresh.burned || fresh.remainingFolders <= 0) {
+        window.localStorage.removeItem(ACTIVE_KEY_STORAGE_KEY);
+        setActiveKey(null);
+      } else {
+        setActiveKey(fresh);
+      }
+    });
+
+    const unsubscribeKey = subscribeSingleVipKeyRealtime(code, (updated) => {
+      if (!updated || updated.burned || updated.remainingFolders <= 0) {
+        window.localStorage.removeItem(ACTIVE_KEY_STORAGE_KEY);
+        setActiveKey(null);
+        setExhaustedKeyCode(code);
+        setIsExhaustedOpen(true);
+      } else {
+        setActiveKey(updated);
+      }
+    });
+
+    return () => {
+      unsubscribeKey();
+    };
+  }, [activeKey?.code]);
+
+  // Automatically pop the generated short VIP Key straight onto the buyer's screen
+  // in real time via Supabase Realtime the moment Admin VIP clicks "✔ Valide & Voye Kle VIP"
+  useEffect(() => {
+    const surfaceApprovedOrder = (order: PaymentOrder | null) => {
       if (order && order.status === 'approved' && order.issuedVipKey) {
         setActiveOrderId(order.id);
         setIsWelcomeOpen(false);
         setIsExhaustedOpen(false);
         setIsDirectCheckoutOpen(true);
-        // Mark as surfaced so closing the modal won't forcefully re-open it 1.2s later
+        // Mark as surfaced so closing the modal won't forcefully re-open it later
         saveActiveCheckoutOrderId(null);
       }
     };
+
+    const checkApprovedOrder = async () => {
+      const pendingOrderId = loadActiveCheckoutOrderId();
+      if (!pendingOrderId) return;
+      const localOrder = getPaymentOrderById(pendingOrderId);
+      if (localOrder?.status === 'approved' && localOrder.issuedVipKey) {
+        surfaceApprovedOrder(localOrder);
+        return;
+      }
+      const remoteOrder = await fetchPaymentOrderByIdRemote(pendingOrderId);
+      surfaceApprovedOrder(remoteOrder);
+    };
+
+    const pendingOrderId = loadActiveCheckoutOrderId();
+    const unsubscribeOrder = pendingOrderId
+      ? subscribePaymentOrderByIdRealtime(pendingOrderId, (updated) => {
+          surfaceApprovedOrder(updated);
+        })
+      : () => {};
 
     const handleStorage = (e: StorageEvent) => {
       if (
@@ -163,21 +317,26 @@ export default function App() {
         e.key === ACTIVE_CHECKOUT_ORDER_STORAGE_KEY ||
         e.key === null
       ) {
-        checkApprovedOrder();
+        void checkApprovedOrder();
       }
     };
 
-    checkApprovedOrder();
+    const onOrdersUpdated = () => {
+      void checkApprovedOrder();
+    };
+
+    void checkApprovedOrder();
     window.addEventListener('storage', handleStorage);
-    window.addEventListener(ORDERS_UPDATED_EVENT, checkApprovedOrder);
-    const poll = window.setInterval(checkApprovedOrder, 1200);
+    window.addEventListener(ORDERS_UPDATED_EVENT, onOrdersUpdated);
+    const poll = window.setInterval(() => void checkApprovedOrder(), 4000);
 
     return () => {
+      unsubscribeOrder();
       window.removeEventListener('storage', handleStorage);
-      window.removeEventListener(ORDERS_UPDATED_EVENT, checkApprovedOrder);
+      window.removeEventListener(ORDERS_UPDATED_EVENT, onOrdersUpdated);
       window.clearInterval(poll);
     };
-  }, []);
+  }, [isDirectCheckoutOpen]);
 
   const handleUnlock = useCallback(
     (record: VipKeyRecord) => {
@@ -278,8 +437,10 @@ export default function App() {
         return;
       }
 
-      const result = consumeFolderCredit(activeKey.code, pack.id);
+      const result = await consumeFolderCreditRemote(activeKey.code, pack.id);
       if (!result.allowed || !result.updatedRecord) {
+        window.localStorage.removeItem(ACTIVE_KEY_STORAGE_KEY);
+        setActiveKey(null);
         handleExhaustedAttempt(activeKey.code);
         return;
       }
@@ -592,130 +753,195 @@ export default function App() {
               </div>
             </div>
 
-            {allPacks.length === 0 ? (
-              <div className="rounded-2xl border border-zinc-800 bg-[#13151B] p-10 text-center space-y-2">
-                <FolderArchive className="h-10 w-10 text-zinc-600 mx-auto" />
-                <p className="text-base font-semibold text-zinc-200">
-                  Pa gen okenn folder .ZIP pibliye pou kounye a.
-                </p>
-                <p className="text-xs text-zinc-400">
-                  Admin nan ka konekte nan « Admin VIP » pou ajoute nouvo folder mizik yo.
-                </p>
+            {/* 1. REAL OWNER DOWNLOADABLE .ZIP FOLDERS AT THE TOP */}
+            <div className="mb-12">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+                <div className="inline-flex items-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/40 px-3.5 py-1.5 text-xs font-extrabold text-emerald-300">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>✅ DISPONIB KOUNYE A ({activePacksCount} Folder .ZIP Pare)</span>
+                </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {allPacks.map((pack) => {
-                  const isComingSoon = Boolean(pack.isComingSoon);
-                  const isPackaging = packagingPackId === pack.id;
-                  const zipFilename = formatZipFolderFilename(pack);
-                  void colorVersion;
 
-                  return (
+              {availablePacks.length === 0 ? (
+                <div className="rounded-2xl border border-zinc-800 bg-[#13151B] p-8 text-center space-y-2">
+                  <FolderArchive className="h-9 w-9 text-zinc-600 mx-auto" />
+                  <p className="text-sm font-semibold text-zinc-200">
+                    Pa gen okenn folder .ZIP pare pou telechaje pou moman an.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {availablePacks.map((pack) => {
+                    const isPackaging = packagingPackId === pack.id;
+                    const zipFilename = formatZipFolderFilename(pack);
+                    void colorVersion;
+
+                    return (
                       <article
                         key={pack.id}
                         className={`group flex flex-col justify-between rounded-2xl border p-6 transition-all duration-200 hover:-translate-y-0.5 ${
-                        isComingSoon
-                          ? 'bg-gradient-to-b from-amber-500/[0.06] to-[#13151B] border-amber-500/45 shadow-[0_0_24px_rgba(245,158,11,0.07)]'
-                          : isUnlockedForDownload
+                          isUnlockedForDownload
                             ? 'bg-[#13151B] border-emerald-500/45 shadow-[0_0_24px_rgba(16,185,129,0.08)]'
                             : 'bg-[#13151B] border-zinc-800 hover:border-zinc-700'
-                      }`}
-                    >
-                      <div>
-                        {/* Top Icon & Genre Row */}
-                        <div className="flex items-start justify-between gap-3">
-                          <div
-                            className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border ${
-                              isComingSoon
-                                ? 'bg-amber-500/15 border-amber-400/45 text-amber-300'
-                                : isUnlockedForDownload
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-3">
+                            <div
+                              className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border ${
+                                isUnlockedForDownload
                                   ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
                                   : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                            }`}
-                          >
-                            {isComingSoon ? (
-                              <Clock className="h-7 w-7 animate-[spin_6s_linear_infinite]" />
-                            ) : (
+                              }`}
+                            >
                               <FolderArchive className="h-7 w-7" />
-                            )}
+                            </div>
+
+                            <span className="text-xs font-semibold text-right text-emerald-400">
+                              {pack.genre}
+                            </span>
                           </div>
 
-                          <span
-                            className={`text-xs font-semibold text-right ${
-                              isComingSoon ? 'text-amber-300' : 'text-emerald-400'
-                            }`}
-                          >
+                          <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/35 px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-emerald-300">
+                            <span>✅ DISPONIB KOUNYE A</span>
+                          </div>
+
+                          <h3 className="mt-3 font-mono text-[15px] sm:text-lg leading-snug font-bold text-white tracking-tight">
+                            <ZipFilenameText filename={zipFilename} />
+                          </h3>
+
+                          <p className="mt-2 text-xs sm:text-sm font-medium text-zinc-400 tabular-nums">
+                            {pack.trackCount} Mizik an Lòd • .ZIP
+                          </p>
+                        </div>
+
+                        <div className="mt-6 pt-5 border-t border-zinc-800/80">
+                          {isUnlockedForDownload ? (
+                            <button
+                              type="button"
+                              disabled={isPackaging}
+                              onClick={() => void handleUnlockOrDownloadPack(pack)}
+                              className="w-full inline-flex items-center justify-center gap-2 min-h-[46px] px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-zinc-950 text-sm font-extrabold whitespace-nowrap transition-colors cursor-pointer"
+                            >
+                              <Download className="h-4 w-4 shrink-0" />
+                              <span>
+                                {isPackaging ? 'Ap prepare .ZIP...' : '⬇️ TELECHAJE .ZIP'}
+                              </span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={isPackaging}
+                              onClick={() => {
+                                if (activeKey && (activeKey.burned || activeKey.remainingFolders <= 0)) {
+                                  handleExhaustedAttempt(activeKey.code);
+                                } else {
+                                  setPendingPack(pack);
+                                  setIsWelcomeOpen(true);
+                                }
+                              }}
+                              className="w-full inline-flex items-center justify-center gap-2 min-h-[46px] px-4 py-2.5 rounded-xl bg-[#0B0C10] border border-zinc-700 hover:border-emerald-500 disabled:opacity-60 text-white text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
+                            >
+                              <Lock className="h-4 w-4 text-emerald-400 shrink-0" />
+                              <span>🔒 Mete Kle VIP pou Telechaje</span>
+                            </button>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* 2. COUNTRY-AWARE TRENDING CATALOG ("🔥 TANDANS NAN PEYI W") */}
+            <div className="pt-8 border-t border-zinc-800/80">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-7">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-xl bg-amber-500/15 border border-amber-400/40 px-3.5 py-1.5 text-xs font-extrabold text-amber-300 mb-3">
+                    <Flame className="h-4 w-4 shrink-0" />
+                    <span>
+                      🔥 TANDANS NAN PEYI W · {selectedCountry.flag} {selectedCountry.name}
+                    </span>
+                  </div>
+                  <h3 className="font-display text-xl sm:text-2xl font-bold text-white tracking-tight">
+                    🔥 TANDANS NAN PEYI W ({comingSoonPacksCount} Pake .ZIP An Preparasyon)
+                  </h3>
+                  <p className="mt-1.5 text-xs sm:text-sm text-zinc-400 max-w-2xl">
+                    Pake ki pi cho yo pou{' '}
+                    <span className="text-zinc-200 font-semibold">
+                      {selectedCountry.flag} {selectedCountry.name}
+                    </span>
+                    . Klike sou « 🔔 Mande Pake Sa a » pou w di DJ Wesley kilès pou l lage pi vit
+                    (pa depanse okenn kredi VIP!).
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {trendingComingSoonPacks.map((pack) => {
+                  const zipFilename = formatZipFolderFilename(pack);
+                  const alreadyRequested = requestedZips.includes(zipFilename);
+                  const isSending = requestingZip === zipFilename;
+
+                  return (
+                    <article
+                      key={pack.id}
+                      className="group flex flex-col justify-between rounded-2xl border p-6 transition-all duration-200 hover:-translate-y-0.5 bg-gradient-to-b from-amber-500/[0.06] to-[#13151B] border-amber-500/40 hover:border-amber-400/70 shadow-[0_0_24px_rgba(245,158,11,0.06)]"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border bg-amber-500/15 border-amber-400/45 text-amber-300">
+                            <Clock className="h-7 w-7 animate-[spin_6s_linear_infinite]" />
+                          </div>
+
+                          <span className="text-xs font-semibold text-right text-amber-300">
                             {pack.genre}
                           </span>
                         </div>
 
-                        {isComingSoon && (
-                          <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 text-[11px] font-bold tracking-wide text-amber-300">
-                            <span>⏳ AN PREPARASYON • AP DISPONIB BYENTO</span>
-                          </div>
-                        )}
+                        <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 text-[11px] font-bold tracking-wide text-amber-300">
+                          <span>⏳ AN PREPARASYON (AP VINI BYENTO)</span>
+                        </div>
 
-                        {/* Exact .ZIP Folder Name (clean 1-2 line wrapping on iPhone without splitting .zip) */}
                         <h3 className="mt-4 font-mono text-[15px] sm:text-lg leading-snug font-bold text-white tracking-tight">
                           <ZipFilenameText filename={zipFilename} />
                         </h3>
 
-                        {/* Track Count & .ZIP Label */}
-                        <p className="mt-2 text-xs sm:text-sm font-medium text-zinc-400 tabular-nums">
-                          {isComingSoon
-                            ? 'Folder an preparasyon • Ap vini byento'
-                            : `${pack.trackCount} Mizik an Lòd • .ZIP`}
+                        <p className="mt-2 text-xs sm:text-sm font-medium text-zinc-400">
+                          Tandans {selectedCountry.flag} {selectedCountry.name} • Ap vini byento
                         </p>
                       </div>
 
-                      {/* Single Action Button: Coming Soon Disabled vs Locked vs Unlocked Download */}
                       <div className="mt-6 pt-5 border-t border-zinc-800/80">
-                        {isComingSoon ? (
-                          <button
-                            type="button"
-                            disabled
-                            aria-disabled="true"
-                            className="w-full inline-flex items-center justify-center gap-2 min-h-[46px] px-4 py-2.5 rounded-xl bg-zinc-900/90 border border-amber-500/35 text-amber-300/85 text-xs sm:text-sm font-bold whitespace-nowrap cursor-not-allowed opacity-85"
-                          >
-                            <Clock className="h-4 w-4 shrink-0 animate-[spin_6s_linear_infinite]" />
-                            <span>⏳ POKO DISPONIB (AP VINI BYENTO)</span>
-                          </button>
-                        ) : isUnlockedForDownload ? (
-                          <button
-                            type="button"
-                            disabled={isPackaging}
-                            onClick={() => void handleUnlockOrDownloadPack(pack)}
-                            className="w-full inline-flex items-center justify-center gap-2 min-h-[46px] px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-zinc-950 text-sm font-extrabold whitespace-nowrap transition-colors cursor-pointer"
-                          >
-                            <Download className="h-4 w-4 shrink-0" />
-                            <span>
-                              {isPackaging ? 'Ap prepare .ZIP...' : '⬇️ TELECHAJE .ZIP'}
-                            </span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={isPackaging}
-                            onClick={() => {
-                              if (activeKey && (activeKey.burned || activeKey.remainingFolders <= 0)) {
-                                handleExhaustedAttempt(activeKey.code);
-                              } else {
-                                setPendingPack(pack);
-                                setIsWelcomeOpen(true);
-                              }
-                            }}
-                            className="w-full inline-flex items-center justify-center gap-2 min-h-[46px] px-4 py-2.5 rounded-xl bg-[#0B0C10] border border-zinc-700 hover:border-emerald-500 disabled:opacity-60 text-white text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
-                          >
-                            <Lock className="h-4 w-4 text-emerald-400 shrink-0" />
-                            <span>🔒 Mete Kle VIP pou Telechaje</span>
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          disabled={isSending}
+                          onClick={() => void handleRequestComingSoonPack(pack)}
+                          className={`w-full inline-flex items-center justify-center gap-2 min-h-[46px] px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-extrabold whitespace-nowrap transition-colors cursor-pointer ${
+                            alreadyRequested
+                              ? 'bg-emerald-500/15 border-emerald-500/45 text-emerald-300 hover:bg-emerald-500/25'
+                              : 'bg-amber-500/15 border-amber-400/60 hover:bg-amber-400 hover:text-zinc-950 text-amber-200'
+                          }`}
+                        >
+                          {alreadyRequested ? (
+                            <>
+                              <CheckCircle2 className="h-4 w-4 shrink-0" />
+                              <span>✅ Demann Voye (Mande Ankò)</span>
+                            </>
+                          ) : (
+                            <>
+                              <Bell className="h-4 w-4 shrink-0" />
+                              <span>{isSending ? 'Ap voye demann...' : '🔔 Mande Pake Sa a'}</span>
+                            </>
+                          )}
+                        </button>
                       </div>
-                      </article>
+                    </article>
                   );
                 })}
               </div>
-            )}
+            </div>
           </div>
         </section>
 
@@ -792,9 +1018,23 @@ export default function App() {
         </div>
       </footer>
 
+      {/* Required Country-Validated Visitor Entry Gate */}
+      <VisitorEntryGateModal
+        isOpen={!visitorProfile && !isAdminAuthenticated && !isAdminOpen}
+        selectedCountryCode={selectedCountryCode}
+        onSelectCountry={handleSelectCountry}
+        onCompleted={(savedVisitor) => {
+          setVisitorProfile(savedVisitor);
+          if (!activeKey) {
+            setIsWelcomeOpen(true);
+          }
+        }}
+        onOpenAdmin={() => setIsAdminOpen(true)}
+      />
+
       {/* Immediate Welcome VIP Modal */}
       <WelcomeVipModal
-        isOpen={isWelcomeOpen}
+        isOpen={isWelcomeOpen && (Boolean(visitorProfile) || isAdminAuthenticated)}
         allPacks={allPacks}
         activeKey={activeKey}
         pendingPack={pendingPack}

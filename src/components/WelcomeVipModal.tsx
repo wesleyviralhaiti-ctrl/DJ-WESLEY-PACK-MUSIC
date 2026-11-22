@@ -14,7 +14,7 @@ import {
   MusicPack,
   VipKeyRecord,
   formatZipFolderFilename,
-  validateVipKeyCode,
+  validateVipKeyCodeRemote,
 } from '../data/musicPacks';
 import {
   getCountryByCode,
@@ -52,11 +52,13 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
 }) => {
   const [keyInput, setKeyInput] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isValidatingKey, setIsValidatingKey] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<string>('21-folder');
 
   useEffect(() => {
     if (isOpen) {
       setErrorMsg(null);
+      setIsValidatingKey(false);
     }
   }, [isOpen]);
 
@@ -70,9 +72,13 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
   const selectedUsdtAmount = getUsdtAmountForPlan(selectedPlan.id);
   const currencyBadge = getRegionCurrencyBadge(selectedCountryCode);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = validateVipKeyCode(keyInput);
+    if (isValidatingKey) return;
+    setIsValidatingKey(true);
+    setErrorMsg(null);
+    const result = await validateVipKeyCodeRemote(keyInput);
+    setIsValidatingKey(false);
     if (result.status !== 'valid' || !result.record) {
       setErrorMsg(result.error ?? '🚫 KÒD SA A DEJA SÈVI / EKSPIRE');
       return;
@@ -211,7 +217,7 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
                 )}
               </div>
 
-              <form onSubmit={handleSubmit} className="mt-4 space-y-3" noValidate>
+              <form onSubmit={(e) => void handleSubmit(e)} className="mt-4 space-y-3" noValidate>
                 <div>
                   <label htmlFor="vip-key-input" className="sr-only">
                     Antre Kle VIP ou
@@ -243,9 +249,12 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
 
                 <button
                   type="submit"
-                  className="w-full min-h-[48px] rounded-xl bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-zinc-950 font-display font-extrabold text-sm sm:text-base tracking-tight px-5 py-3 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+                  disabled={isValidatingKey}
+                  className="w-full min-h-[48px] rounded-xl bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 disabled:opacity-65 text-zinc-950 font-display font-extrabold text-sm sm:text-base tracking-tight px-5 py-3 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
                 >
-                  🔓 DEBLOKE AKSÈ VIP KOUNYE A
+                  {isValidatingKey
+                    ? '⏳ Ap verifye Kle VIP la...'
+                    : '🔓 DEBLOKE AKSÈ VIP KOUNYE A'}
                 </button>
               </form>
             </div>
@@ -355,14 +364,14 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
                 <span>
                   {isHaiti
                     ? `⚡ PEYE AK NATCASH (${selectedPlan.shortLabel} · ${selectedPlanPrice})`
-                    : `⚡ PEYE AK USDT TRC20 (${selectedPlan.shortLabel} · ${selectedUsdtAmount} USDT)`}
+                    : `💳 Peye ak Kat Visa / Mastercard / Apple Pay (${selectedPlan.shortLabel} · ${selectedUsdtAmount} USDT)`}
                 </span>
               </button>
 
               <p className="text-xs text-zinc-300 text-center leading-relaxed pt-0.5">
                 {isHaiti
                   ? '🇭🇹 Ayiti: Peye dirèkteman ak Natcash (+509 56568810) epi resevwa Kle VIP ou touswit sou ekran an!'
-                  : `🌐 Entènasyonal (${selectedCountry.flag}): Peye an liy ak USDT (TRC20) pou w resevwa Kle VIP ou touswit sou ekran an!`}
+                  : `🌐 Entènasyonal (${selectedCountry.flag}): Peye ak Kat Visa / Mastercard / Apple Pay oswa voye USDT (TRC20) pou w resevwa Kle VIP ou touswit!`}
               </p>
             </div>
 

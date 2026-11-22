@@ -161,7 +161,7 @@ export const QuotaExhaustedModal: React.FC<QuotaExhaustedModalProps> = ({
               <span>
                 {isHaiti
                   ? `⚡ PEYE AK NATCASH (${selectedPlan.shortLabel} · ${selectedPlanPrice})`
-                  : `⚡ PEYE AK USDT TRC20 (${selectedPlan.shortLabel} · ${selectedUsdtAmount} USDT)`}
+                  : `💳 Peye ak Kat Visa / Mastercard / Apple Pay (${selectedPlan.shortLabel} · ${selectedUsdtAmount} USDT)`}
               </span>
             </button>
 
