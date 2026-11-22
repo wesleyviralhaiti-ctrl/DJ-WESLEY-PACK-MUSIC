@@ -197,9 +197,10 @@ export interface FolderPlan {
   folders: number;
   label: string;
   shortLabel: string;
+  badge?: string;
+  subtitle: string;
   description: string;
   features: string[];
-  whatsappMessage: string;
   recommended?: boolean;
 }
 
@@ -216,12 +217,6 @@ export interface VipKeyRecord {
   note?: string;
 }
 
-export const WHATSAPP_BASE_URL =
-  'https://wa.me/50938569265?text=Bonjou%20Wesley%2C%20mwen%20soti%20sou%20TikTok%2C%20mwen%20bezwen%20yon%20Kle%20VIP%20pou%20m%20telechaje%20pake%20mizik%20yo!';
-
-export const WHATSAPP_RENEWAL_URL =
-  'https://wa.me/50938569265?text=Bonjou%20Wesley%2C%20kredi%20folder%20VIP%20mwen%20an%20fini%2C%20mwen%20vle%20achte%20yon%20l%C3%B2t%20Kle%20VIP!';
-
 export const HERO_IMAGE = '/src/assets/images/hero_studio_console_1795118961756.jpg';
 
 export const ADMIN_KEYS_STORAGE_KEY = 'wesley_vip_keys_db_v1';
@@ -230,67 +225,75 @@ export const DEVICE_TOKEN_STORAGE_KEY = 'wesley_device_token_v1';
 
 export const FOLDER_PLANS: FolderPlan[] = [
   {
-    id: '1-folder',
-    folders: 1,
-    label: '📁 1 Folder (1 Pake 100 Mizik)',
-    shortLabel: '1 Folder',
-    description: 'Chwazi nenpòt 1 folder konplè (100 mizik) nan katalòg la pou w telechaje.',
+    id: '10-folder',
+    folders: 10,
+    label: '📁 9 + 1 Folder GRATIS (10 Folder Total · 1,000 Mizik)',
+    shortLabel: '9 + 1 Folder GRATIS',
+    badge: '10 Folder Total',
+    subtitle: '1,000 Mizik .ZIP an Lòd',
+    description: 'Chwazi nenpòt 10 folder konplè (1,000 mizik) nan katalòg la pou w telechaje.',
     features: [
-      '1 Kredi Folder (.ZIP) ki gen 100 mizik ladan l',
-      'Kalite MP3 320kbps pare pou telefòn ak DJ',
-      'Kòd VIP inik pou yon sèl itilizasyon (Yon Sèl Fwa)',
+      '10 Kredi Folder (.ZIP) — 1,000 mizik an lòd',
+      'Kalite MP3 320kbps pare pou telefòn ak VirtualDJ',
+      'Livrezon Kle VIP otomatik touswit aprè peman',
     ],
-    whatsappMessage:
-      'Bonjou Wesley, mwen soti sou TikTok, mwen ta renmen achte Plan VIP 1 Folder (1 Pake 100 Mizik)!',
   },
   {
-    id: '3-folder',
-    folders: 3,
-    label: '📁 3 Folder (3 Pake Mizik)',
-    shortLabel: '3 Folder',
-    description: 'Pi bon chwa pou pran 3 estil diferan (egzanp: Konpa, Rabòday, ak Afrobeats).',
+    id: '21-folder',
+    folders: 21,
+    label: '📁 20 + 1 Folder GRATIS (21 Folder Total · 2,100 Mizik)',
+    shortLabel: '20 + 1 Folder GRATIS',
+    badge: '21 Folder Total',
+    subtitle: '2,100 Mizik .ZIP an Lòd',
+    description: 'Pi bon chwa POPILÈ a: 21 folder .ZIP konplè (2,100 mizik) nan tout estil.',
     features: [
-      '3 Kredi Folder (.ZIP) — 300 mizik total',
+      '21 Kredi Folder (.ZIP) — 2,100 mizik total',
       'Pa gen dat ekspirasyon tan: itilize kredi yo lè w vle',
-      'Klase pa BPM ak vèsyon DJ Intro',
+      'Koulè VirtualDJ + 2 Hot Cues pare',
     ],
-    whatsappMessage:
-      'Bonjou Wesley, mwen soti sou TikTok, mwen ta renmen achte Plan VIP 3 Folder (3 Pake Mizik)!',
     recommended: true,
   },
   {
-    id: '5-folder',
-    folders: 5,
-    label: '📁 5 Folder (5 Pake Mizik)',
-    shortLabel: '5 Folder',
+    id: '36-folder',
+    folders: 36,
+    label: '📁 35 + 1 Folder GRATIS (36 Folder Total · 3,600 Mizik)',
+    shortLabel: '35 + 1 Folder GRATIS',
+    badge: '36 Folder Total',
+    subtitle: '3,600 Mizik .ZIP an Lòd',
     description: 'Pou DJ ak amatè ki vle yon gwo baz mizik Karayib ak Entènasyonal.',
     features: [
-      '5 Kredi Folder (.ZIP) — 500 mizik total',
-      'Telechaje 5 gwo pake yo nan pwòp ritm ou',
-      'Sipò dirèk ak Admin nan sou WhatsApp',
+      '36 Kredi Folder (.ZIP) — 3,600 mizik total',
+      'Telechaje 36 gwo pake yo nan pwòp ritm ou',
+      'Peman otomatik sekirize (Kat Vityèl / USDT / Kat Bankè)',
     ],
-    whatsappMessage:
-      'Bonjou Wesley, mwen soti sou TikTok, mwen ta renmen achte Plan VIP 5 Folder (5 Pake Mizik)!',
   },
   {
-    id: '10-folder',
-    folders: 10,
-    label: '📁 10 Folder (10 Pake Mizik)',
-    shortLabel: '10 Folder',
-    description: 'Tout katalòg konplè a: tout 10 folder yo (1,000 mizik) nan yon sèl Kle VIP.',
+    id: '55-folder',
+    folders: 55,
+    label: '📁 55 Folder (5,500 Mizik .ZIP an Lòd)',
+    shortLabel: '55 Folder',
+    subtitle: '5,500 Mizik .ZIP an Lòd',
+    description: 'Gwo pakè DJ pwofesyonèl: 55 folder .ZIP (5,500 mizik) nan yon sèl Kle VIP.',
     features: [
-      '10 Kredi Folder (.ZIP) — 1,000 mizik total',
-      'Aksè pou telechaje tout koleksyon Wesley Music Packs la',
+      '55 Kredi Folder (.ZIP) — 5,500 mizik total',
+      'Aksè pou telechaje tout gwo koleksyon Wesley Music Packs yo',
       'Pi gwo ekonomi pou DJ pwofesyonèl',
     ],
-    whatsappMessage:
-      'Bonjou Wesley, mwen soti sou TikTok, mwen ta renmen achte Plan VIP 10 Folder (10 Pake Mizik)!',
+  },
+  {
+    id: 'unlimited-vip',
+    folders: 999,
+    label: "👑 KLE VIP ILIMITE (♾️ Folder a L'Infini)",
+    shortLabel: '👑 KLE VIP ILIMITE',
+    subtitle: "♾️ Telechajman a L'Infini ak tout folder .ZIP yo",
+    description: "Aksè konplè a l'infini sou tout folder .ZIP yo + mizik VirtualDJ yo.",
+    features: [
+      "Telechajman a L'Infini sou tout folder .ZIP yo",
+      'Koulè VirtualDJ + 2 Hot Cues pare sou tout pake yo',
+      'Telechajman dirèk ak vitès maksimòm sou tout aparèy',
+    ],
   },
 ];
-
-export function buildPlanWhatsappUrl(message: string): string {
-  return `https://wa.me/50938569265?text=${encodeURIComponent(message)}`;
-}
 
 export function getOrCreateDeviceToken(): string {
   try {
@@ -448,7 +451,7 @@ export function validateVipKeyCode(rawCode: string): {
     return {
       status: 'invalid',
       error:
-        'Kòd VIP sa a pa egziste nan sistèm nan. Verifye kòd Admin nan ba ou a oswa ekri Admin nan sou WhatsApp.',
+        'Kòd VIP sa a pa egziste nan sistèm nan. Verifye Kòd Prepeye ou a oswa achte yon nouvo Kle VIP otomatik anba a.',
     };
   }
 
@@ -524,15 +527,17 @@ export function consumeFolderCredit(
     };
   }
 
+  const isUnlimited = current.totalFolders >= 999;
   const alreadyDownloaded = current.downloadedPackIds.includes(packId);
-  const nextRemaining = alreadyDownloaded
-    ? current.remainingFolders
-    : Math.max(0, current.remainingFolders - 1);
+  const nextRemaining =
+    isUnlimited || alreadyDownloaded
+      ? current.remainingFolders
+      : Math.max(0, current.remainingFolders - 1);
   const nextDownloaded = alreadyDownloaded
     ? current.downloadedPackIds
     : [...current.downloadedPackIds, packId];
 
-  const isNowBurned = nextRemaining === 0;
+  const isNowBurned = !isUnlimited && nextRemaining === 0;
 
   const updated: VipKeyRecord = {
     ...current,

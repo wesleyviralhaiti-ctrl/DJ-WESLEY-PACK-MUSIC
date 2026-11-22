@@ -25,9 +25,11 @@ import {
   FolderArchive,
   Hourglass,
   Plus,
-  Megaphone,
   Save,
-  Film,
+  CreditCard,
+  Smartphone,
+  Clock,
+  ExternalLink,
 } from 'lucide-react';
 import {
   COMING_SOON_GENRE_PRESETS,
@@ -67,13 +69,21 @@ import {
 } from '../data/musicPacks';
 import { ZipFilenameText } from './ZipFilenameText';
 import {
-  AdSystemConfig,
-  DEFAULT_PROMO_HEADLINE,
+  AutomatedCheckoutConfig,
   isValidOptionalHttpUrl,
-  loadAdConfig,
-  resetAdConfig,
-  saveAdConfig,
-} from '../data/adConfig';
+  loadCheckoutConfig,
+  saveCheckoutConfig,
+} from '../data/checkoutConfig';
+import {
+  approvePaymentOrder,
+  deletePaymentOrder,
+  isValidTronTxHash,
+  loadPaymentOrders,
+  ORDERS_UPDATED_EVENT,
+  PAYMENT_ORDERS_STORAGE_KEY,
+  PaymentOrder,
+  rejectPaymentOrder,
+} from '../data/paymentOrders';
 import {
   analyzeMp3FileForHotCues,
   clearUploadedMp3sForPack,
@@ -104,7 +114,7 @@ interface AdminPanelModalProps {
   onKeysChanged: () => void;
   onColorsChanged: () => void;
   onCustomPacksChanged: () => void;
-  onAdConfigChanged: () => void;
+  onCheckoutConfigChanged: () => void;
 }
 
 const PREFIX_PRESETS = ['W#', 'JW@', 'W$', 'W*'];
@@ -121,13 +131,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   onKeysChanged,
   onColorsChanged,
   onCustomPacksChanged,
-  onAdConfigChanged,
+  onCheckoutConfigChanged,
 }) => {
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'packs' | 'colors' | 'keys' | 'ads'>('packs');
+  const [activeTab, setActiveTab] = useState<'packs' | 'colors' | 'keys' | 'orders'>('packs');
 
   // Top Full-Folder Dropzone & Coming Soon Creation State
   const [createAsComingSoon, setCreateAsComingSoon] = useState(false);
@@ -150,7 +160,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const activatePackInputRef = useRef<HTMLInputElement | null>(null);
 
   // VIP Keys state
-  const [selectedQuota, setSelectedQuota] = useState<number>(3);
+  const [selectedQuota, setSelectedQuota] = useState<number>(21);
   const [customQuotaInput, setCustomQuotaInput] = useState<string>('');
   const [patternPrefix, setPatternPrefix] = useState<string>('W#');
   const [customCodeInput, setCustomCodeInput] = useState<string>(() =>
@@ -184,10 +194,18 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [colorSavedBanner, setColorSavedBanner] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // VidMate-Style Ad System Manager state (Adsterra / Monetag)
-  const [adDraftConfig, setAdDraftConfig] = useState<AdSystemConfig>(() => loadAdConfig());
-  const [adSaveBanner, setAdSaveBanner] = useState<string | null>(null);
-  const [adUrlError, setAdUrlError] = useState<string | null>(null);
+  // Automated Checkout Links state (Crypto USDT / Payhip / Card)
+  const [checkoutDraftConfig, setCheckoutDraftConfig] = useState<AutomatedCheckoutConfig>(() =>
+    loadCheckoutConfig()
+  );
+  const [checkoutSaveBanner, setCheckoutSaveBanner] = useState<string | null>(null);
+  const [checkoutUrlError, setCheckoutUrlError] = useState<string | null>(null);
+
+  // Incoming Customer Payment Orders Queue (Natcash Haiti & USDT TRC20 International)
+  const [paymentOrders, setPaymentOrders] = useState<PaymentOrder[]>(() => loadPaymentOrders());
+  const [orderFilter, setOrderFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  const [orderActionBanner, setOrderActionBanner] = useState<string | null>(null);
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && isAuthenticated) {
@@ -197,8 +215,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       setDraftColorConfig(getFolderColorConfig(selectedPackId));
       setDraftCuesConfig(getFolderCuesConfig(selectedPackId));
       setUploadedCount(countUploadedMp3sForPack(selectedPackId));
-      setAdDraftConfig(loadAdConfig());
-      setAdUrlError(null);
+      setCheckoutDraftConfig(loadCheckoutConfig());
+      setCheckoutUrlError(null);
+      setPaymentOrders(loadPaymentOrders());
     }
     if (!isOpen) {
       cueAuditionPlayer.stop();
@@ -207,6 +226,28 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       setIsDraggingFolder(false);
     }
   }, [isOpen, isAuthenticated, patternPrefix, selectedPackId]);
+
+  // Keep payment orders live-updated while Admin VIP is open
+  useEffect(() => {
+    if (!isOpen || !isAuthenticated) return;
+    const refreshOrders = () => {
+      setPaymentOrders(loadPaymentOrders());
+      setKeys(loadAllVipKeys());
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === PAYMENT_ORDERS_STORAGE_KEY || e.key === null) {
+        refreshOrders();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener(ORDERS_UPDATED_EVENT, refreshOrders);
+    const poll = window.setInterval(refreshOrders, 2000);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(ORDERS_UPDATED_EVENT, refreshOrders);
+      window.clearInterval(poll);
+    };
+  }, [isOpen, isAuthenticated]);
 
   const selectedPack = useMemo(
     () => allPacks.find((p) => p.id === selectedPackId) ?? allPacks[0] ?? null,
@@ -244,6 +285,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       setDraftColorConfig(getFolderColorConfig(selectedPackId));
       setDraftCuesConfig(getFolderCuesConfig(selectedPackId));
       setUploadedCount(countUploadedMp3sForPack(selectedPackId));
+      setPaymentOrders(loadPaymentOrders());
     } else {
       setAuthError('Modpas Admin lan pa kòrèk. Eseye ankò.');
     }
@@ -284,8 +326,15 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     onKeysChanged();
   };
 
-  const handleCopyForWhatsapp = async (record: VipKeyRecord) => {
-    const msg = `Bonjou! Men Kòd VIP ou a pou WESLEY MUSIC PACKS (${record.totalFolders} Folder / ${record.totalFolders * 100} Mizik):\n\n🔑 Kòd VIP (Yon Sèl Fwa): ${record.code}\n📁 Kredi Folder: ${record.remainingFolders} / ${record.totalFolders} Folder\n⚠️ Kòd sa a fèt pou yon sèl itilizasyon sèlman.`;
+  const handleCopyVipKeyMessage = async (record: VipKeyRecord) => {
+    const isUnlimited = record.totalFolders >= 999;
+    const planLabel = isUnlimited
+      ? "👑 KLE VIP ILIMITE (♾️ Folder a L'Infini)"
+      : `${record.totalFolders} Folder / ${(record.totalFolders * 100).toLocaleString('en-US')} Mizik`;
+    const creditLabel = isUnlimited
+      ? "♾️ Telechajman a L'Infini"
+      : `${record.remainingFolders} / ${record.totalFolders} Folder`;
+    const msg = `Men Kòd VIP ou a pou WESLEY MUSIC PACKS (${planLabel}):\n\n🔑 Kòd VIP (Yon Sèl Fwa): ${record.code}\n📁 Kredi Folder: ${creditLabel}\n⚠️ Kòd sa a fèt pou yon sèl itilizasyon sèlman.`;
     try {
       await navigator.clipboard.writeText(msg);
       setCopiedCode(record.code);
@@ -306,11 +355,81 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     }
   };
 
+  const handleSaveCheckoutLinks = (e: React.FormEvent) => {
+    e.preventDefault();
+    const urlsToValidate = [
+      checkoutDraftConfig.defaultCheckoutUrl,
+      checkoutDraftConfig.planLinks['10-folder'],
+      checkoutDraftConfig.planLinks['21-folder'],
+      checkoutDraftConfig.planLinks['36-folder'],
+      checkoutDraftConfig.planLinks['55-folder'],
+      checkoutDraftConfig.planLinks['unlimited-vip'],
+    ];
+    if (urlsToValidate.some((u) => !isValidOptionalHttpUrl(u))) {
+      setCheckoutUrlError(
+        'Tout lyen peman yo dwe kòmanse ak https:// oswa http:// (oswa kite l vid).'
+      );
+      return;
+    }
+    setCheckoutUrlError(null);
+    const saved = saveCheckoutConfig(checkoutDraftConfig);
+    setCheckoutDraftConfig(saved);
+    onCheckoutConfigChanged();
+    setCheckoutSaveBanner('✅ Lyen Peman Otomatik yo anrejistre sou sit la!');
+    window.setTimeout(() => setCheckoutSaveBanner(null), 3500);
+  };
+
   const handleDeleteKey = (code: string) => {
     const updated = loadAllVipKeys().filter((k) => k.code !== code);
     saveAllVipKeys(updated);
     setKeys(updated);
     onKeysChanged();
+  };
+
+  const pendingOrdersCount = useMemo(
+    () => paymentOrders.filter((o) => o.status === 'pending').length,
+    [paymentOrders]
+  );
+
+  const filteredOrders = useMemo(() => {
+    if (orderFilter === 'pending') return paymentOrders.filter((o) => o.status === 'pending');
+    if (orderFilter === 'approved') return paymentOrders.filter((o) => o.status === 'approved');
+    return paymentOrders;
+  }, [paymentOrders, orderFilter]);
+
+  const handleApproveOrder = (orderId: string) => {
+    const res = approvePaymentOrder(orderId, 'admin');
+    if (!res.success || !res.order) {
+      setOrderActionBanner(res.error ?? 'Pa kapab valide kòmand lan.');
+      return;
+    }
+    setPaymentOrders(loadPaymentOrders());
+    setKeys(loadAllVipKeys());
+    onKeysChanged();
+    setOrderActionBanner(
+      `✅ Kòmand ${res.order.id} valide! Kle VIP (${res.order.issuedVipKey}) kreye & voye sou ekran kliyan an touswit.`
+    );
+    window.setTimeout(() => setOrderActionBanner(null), 5000);
+  };
+
+  const handleRejectOrder = (orderId: string) => {
+    rejectPaymentOrder(orderId);
+    setPaymentOrders(loadPaymentOrders());
+    setOrderActionBanner('❌ Peman an make kòm refize. Kliyan an ap kapab korije l.');
+    window.setTimeout(() => setOrderActionBanner(null), 4000);
+  };
+
+  const handleDeleteOrder = (orderId: string) => {
+    deletePaymentOrder(orderId);
+    setPaymentOrders(loadPaymentOrders());
+  };
+
+  const handleCopyOrderValue = async (id: string, value: string) => {
+    await copyPlainText(value);
+    setCopiedOrderId(id);
+    window.setTimeout(() => {
+      setCopiedOrderId((curr) => (curr === id ? null : curr));
+    }, 2200);
   };
 
   const processWholeMusicFolder = async (
@@ -834,55 +953,6 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     window.setTimeout(() => setColorSavedBanner(false), 3000);
   };
 
-  const handleToggleMasterAds = () => {
-    const nextConfig: AdSystemConfig = {
-      ...adDraftConfig,
-      enabled: !adDraftConfig.enabled,
-    };
-    const saved = saveAdConfig(nextConfig);
-    setAdDraftConfig(saved);
-    onAdConfigChanged();
-    setAdSaveBanner(
-      saved.enabled
-        ? '🟢 Anons yo AKTIVE pou vizitè ki poko gen Kle VIP!'
-        : '🔴 Tout anons yo FÈMEN sou tout sit la.'
-    );
-    window.setTimeout(() => setAdSaveBanner(null), 3500);
-  };
-
-  const handleToggleSponsorPopup = () => {
-    const nextConfig: AdSystemConfig = {
-      ...adDraftConfig,
-      enableSponsorPopup: !adDraftConfig.enableSponsorPopup,
-    };
-    const saved = saveAdConfig(nextConfig);
-    setAdDraftConfig(saved);
-    onAdConfigChanged();
-  };
-
-  const handleSaveAdManager = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isValidOptionalHttpUrl(adDraftConfig.smartLinkUrl)) {
-      setAdUrlError('Lyen SmartLink lan dwe kòmanse ak https:// oswa http:// (oswa kite l vid).');
-      return;
-    }
-    setAdUrlError(null);
-    const saved = saveAdConfig(adDraftConfig);
-    setAdDraftConfig(saved);
-    onAdConfigChanged();
-    setAdSaveBanner('✅ Kòd Adsterra / Monetag yo anrejistre epi aktive sou sit la!');
-    window.setTimeout(() => setAdSaveBanner(null), 4000);
-  };
-
-  const handleResetAds = () => {
-    const fresh = resetAdConfig();
-    setAdDraftConfig(fresh);
-    setAdUrlError(null);
-    onAdConfigChanged();
-    setAdSaveBanner('🧹 Anons yo reyajiste ak banyè promo pa defo Wesley Music yo.');
-    window.setTimeout(() => setAdSaveBanner(null), 3500);
-  };
-
   const overrideCount = Object.keys(draftColorConfig.trackColors || {}).length;
 
   return (
@@ -1020,20 +1090,35 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('ads')}
+                onClick={() => {
+                  setPaymentOrders(loadPaymentOrders());
+                  setActiveTab('orders');
+                }}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                  activeTab === 'ads'
+                  activeTab === 'orders'
                     ? 'bg-emerald-500 text-zinc-950'
                     : 'bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-800'
                 }`}
               >
-                <Megaphone className="h-4 w-4 shrink-0" />
-                <span>📢 Jere Anons (Adsterra / Monetag)</span>
+                <CreditCard className="h-4 w-4 shrink-0" />
+                <span>💳 Kòmand &amp; Peman Kliyan</span>
+                {pendingOrdersCount > 0 && (
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums ${
+                      activeTab === 'orders'
+                        ? 'bg-zinc-950 text-emerald-300'
+                        : 'bg-amber-400 text-zinc-950'
+                    }`}
+                  >
+                    {pendingOrdersCount}
+                  </span>
+                )}
               </button>
             </div>
 
             <div className="p-6 space-y-6 overflow-y-auto">
               {/* TOP OF ADMIN PANEL: + Kreye Nouvo Folder (Upload Real Folder OR Coming Soon Placeholder) */}
+              {activeTab !== 'orders' && (
               <div className="rounded-2xl border border-zinc-800 bg-[#0E1015] p-5 sm:p-6 space-y-5">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800/80 pb-4">
                   <div className="flex items-center gap-2.5">
@@ -1346,6 +1431,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   </div>
                 )}
               </div>
+              )}
 
               {/* Hidden file input for activating any "An Preparasyon" folder with real MP3s */}
               <input
@@ -1357,7 +1443,293 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 className="hidden"
               />
 
-              {activeTab === 'packs' ? (
+              {activeTab === 'orders' ? (
+                /* 💳 Kòmand & Peman Kliyan — Live Natcash Haiti & USDT TRC20 Order Queue */
+                <div className="space-y-5">
+                  <div className="rounded-xl bg-[#0E1015] border border-emerald-500/30 p-5 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-display text-base sm:text-lg font-bold text-white">
+                          💳 Kòmand &amp; Peman Kliyan (Natcash Ayiti &amp; USDT TRC20)
+                        </h3>
+                        <p className="text-xs text-zinc-400 mt-1">
+                          Verifye kòd tranzaksyon Natcash (+509 56568810) oswa TxID USDT TRC20 yo,
+                          epi klike « ✔ Valide &amp; Voye Kle VIP » pou debloke ekran kliyan an
+                          touswit.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+                        {(
+                          [
+                            { id: 'all', label: `Tout (${paymentOrders.length})` },
+                            { id: 'pending', label: `⏳ Ap Tann (${pendingOrdersCount})` },
+                            {
+                              id: 'approved',
+                              label: `✅ Valide (${paymentOrders.filter((o) => o.status === 'approved').length})`,
+                            },
+                          ] as const
+                        ).map((tab) => (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setOrderFilter(tab.id)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                              orderFilter === tab.id
+                                ? 'bg-emerald-500 text-zinc-950 border-emerald-400'
+                                : 'bg-[#0B0C10] text-zinc-300 border-zinc-800 hover:border-zinc-600'
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {orderActionBanner && (
+                      <div
+                        role="status"
+                        className="rounded-xl bg-emerald-500/15 border border-emerald-500/40 px-4 py-3 text-xs font-semibold text-emerald-200 flex items-center gap-2"
+                      >
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                        <span>{orderActionBanner}</span>
+                      </div>
+                    )}
+
+                    {filteredOrders.length === 0 ? (
+                      <div className="rounded-xl border border-zinc-800 bg-[#0B0C10] p-8 text-center space-y-2">
+                        <CreditCard className="h-9 w-9 text-zinc-600 mx-auto" />
+                        <p className="text-sm font-semibold text-zinc-200">
+                          {orderFilter === 'pending'
+                            ? 'Pa gen okenn peman k ap tann verifikasyon kounye a.'
+                            : 'Pa gen okenn kòmand kliyan anrejistre ankò.'}
+                        </p>
+                        <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                          Lè yon kliyan voye yon peman Natcash oswa USDT TRC20 sou sit la, kòmand li
+                          ap parèt isit la otomatikman pou w kapab valide l nan 1 klik.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {filteredOrders.map((order) => {
+                          const isPending = order.status === 'pending';
+                          const isApproved = order.status === 'approved';
+                          const isRejected = order.status === 'rejected';
+                          const isNatcash = order.method === 'natcash';
+                          const showTronScanLink =
+                            !isNatcash && isValidTronTxHash(order.transactionId);
+
+                          return (
+                            <div
+                              key={order.id}
+                              className={`rounded-xl border p-4 transition-colors ${
+                                isPending
+                                  ? 'bg-amber-500/[0.05] border-amber-500/45'
+                                  : isApproved
+                                    ? 'bg-emerald-500/[0.04] border-emerald-500/35'
+                                    : 'bg-rose-500/[0.04] border-rose-500/35'
+                              }`}
+                            >
+                              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                <div className="space-y-2 min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span
+                                      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-extrabold ${
+                                        isNatcash
+                                          ? 'bg-rose-500/20 text-rose-200 border border-rose-500/40'
+                                          : 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/40'
+                                      }`}
+                                    >
+                                      {isNatcash ? (
+                                        <>
+                                          <Smartphone className="h-3 w-3" />
+                                          <span>🇭🇹 NATCASH</span>
+                                        </>
+                                      ) : (
+                                        <span>🌐 USDT (TRC20)</span>
+                                      )}
+                                    </span>
+
+                                    <span
+                                      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold ${
+                                        isPending
+                                          ? 'bg-amber-400/20 text-amber-200 border border-amber-400/40'
+                                          : isApproved
+                                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                            : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                                      }`}
+                                    >
+                                      {isPending && (
+                                        <>
+                                          <Clock className="h-3 w-3" />
+                                          <span>⏳ Ap Tann Verifikasyon</span>
+                                        </>
+                                      )}
+                                      {isApproved && (
+                                        <span>
+                                          {order.verifiedBy === 'trongrid'
+                                            ? '✅ Valide Otomatik (TRON)'
+                                            : '✅ Valide pa Admin'}
+                                        </span>
+                                      )}
+                                      {isRejected && <span>❌ Refize</span>}
+                                    </span>
+
+                                    <span className="font-mono text-[11px] text-zinc-400">
+                                      {order.id}
+                                    </span>
+                                    <span className="text-[11px] text-zinc-500">
+                                      · {new Date(order.createdAt).toLocaleString()}
+                                    </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                                    <div className="rounded-lg bg-[#0B0C10] border border-zinc-800 px-3 py-2">
+                                      <span className="text-zinc-500 block text-[10px]">
+                                        Plan &amp; Montan
+                                      </span>
+                                      <span className="font-bold text-white">
+                                        {order.planTitle}
+                                      </span>
+                                      <span className="block font-mono text-emerald-300 font-bold mt-0.5">
+                                        {order.amountLabel}
+                                      </span>
+                                    </div>
+
+                                    <div className="rounded-lg bg-[#0B0C10] border border-zinc-800 px-3 py-2">
+                                      <span className="text-zinc-500 block text-[10px]">
+                                        Peyi / Telefòn Kliyan
+                                      </span>
+                                      <span className="font-semibold text-zinc-200">
+                                        {order.countryName} ({order.countryCode})
+                                      </span>
+                                      {order.buyerPhone && (
+                                        <span className="block font-mono text-zinc-300 mt-0.5">
+                                          📞 {order.buyerPhone}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <div className="rounded-lg bg-[#0B0C10] border border-zinc-800 px-3 py-2">
+                                      <span className="text-zinc-500 block text-[10px]">
+                                        {isNatcash
+                                          ? 'Kòd Tranzaksyon (ID) Natcash'
+                                          : 'Transaction ID / Hash (TxID)'}
+                                      </span>
+                                      <div className="flex items-center justify-between gap-1.5 mt-0.5">
+                                        <span className="font-mono text-amber-200 font-bold truncate">
+                                          {order.transactionId}
+                                        </span>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              void handleCopyOrderValue(
+                                                `tx-${order.id}`,
+                                                order.transactionId
+                                              )
+                                            }
+                                            title="Kopye TxID"
+                                            className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 cursor-pointer"
+                                          >
+                                            {copiedOrderId === `tx-${order.id}` ? (
+                                              <Check className="h-3 w-3 text-emerald-400" />
+                                            ) : (
+                                              <Copy className="h-3 w-3" />
+                                            )}
+                                          </button>
+                                          {showTronScanLink && (
+                                            <a
+                                              href={`https://tronscan.org/#/transaction/${encodeURIComponent(
+                                                order.transactionId.trim()
+                                              )}`}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              title="Verifye sou TronScan"
+                                              className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-emerald-300"
+                                            >
+                                              <ExternalLink className="h-3 w-3" />
+                                            </a>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {isApproved && order.issuedVipKey && (
+                                    <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-500/15 border border-emerald-500/40 px-3 py-1.5 text-xs">
+                                      <span className="text-emerald-200 font-semibold">
+                                        🔑 Kle VIP Voye bay Kliyan an:
+                                      </span>
+                                      <span className="font-mono font-extrabold text-white tracking-wider">
+                                        {order.issuedVipKey}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          void handleCopyOrderValue(
+                                            `key-${order.id}`,
+                                            order.issuedVipKey || ''
+                                          )
+                                        }
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500 text-zinc-950 font-bold text-[11px] cursor-pointer"
+                                      >
+                                        {copiedOrderId === `key-${order.id}` ? (
+                                          <>
+                                            <Check className="h-3 w-3" />
+                                            <span>Kopye!</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Copy className="h-3 w-3" />
+                                            <span>Kopye</span>
+                                          </>
+                                        )}
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-wrap lg:flex-col items-stretch gap-2 shrink-0">
+                                  {!isApproved && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleApproveOrder(order.id)}
+                                      className="inline-flex items-center justify-center gap-1.5 min-h-[42px] px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-display font-extrabold text-xs whitespace-nowrap transition-colors cursor-pointer"
+                                    >
+                                      <span>✔ Valide &amp; Voye Kle VIP</span>
+                                    </button>
+                                  )}
+
+                                  {isPending && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRejectOrder(order.id)}
+                                      className="inline-flex items-center justify-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/40 hover:bg-rose-500/25 text-rose-300 text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer"
+                                    >
+                                      <span>✖ Refize</span>
+                                    </button>
+                                  )}
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteOrder(order.id)}
+                                    aria-label={`Efase kòmand ${order.id}`}
+                                    className="inline-flex items-center justify-center gap-1.5 min-h-[34px] px-3 py-1.5 rounded-xl bg-[#0B0C10] border border-zinc-800 hover:border-rose-500/40 text-zinc-400 hover:text-rose-300 text-xs whitespace-nowrap transition-colors cursor-pointer"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <span>Efase</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : activeTab === 'packs' ? (
                 /* 📁 Jere Pake Mizik Yo — Activate Coming Soon Folders + Free Admin Test Download + Delete */
                 <div className="space-y-4">
                   <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 space-y-3">
@@ -1662,6 +2034,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               setCustomQuotaInput('');
                             }}
                             className={`flex items-center justify-between px-4 py-3 rounded-xl border text-left text-sm font-medium transition-colors cursor-pointer ${
+                              plan.id === 'unlimited-vip' ? 'sm:col-span-2' : ''
+                            } ${
                               isSelected
                                 ? 'bg-emerald-500/15 border-emerald-500 text-emerald-200'
                                 : 'bg-[#0B0C10] border-zinc-800 text-zinc-300 hover:border-zinc-600'
@@ -1812,7 +2186,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       <p className="text-xs text-zinc-400 tabular-nums">
                         Plan seleksyone:{' '}
                         <span className="font-semibold text-white">
-                          {activeQuota} Folder ({activeQuota * 100} Mizik)
+                          {activeQuota >= 999
+                            ? "👑 KLE VIP ILIMITE (♾️ Folder a L'Infini)"
+                            : `${activeQuota} Folder (${(activeQuota * 100).toLocaleString('en-US')} Mizik)`}
                         </span>
                       </p>
                       <button
@@ -1874,7 +2250,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                     )}
                                     {status === 'in_progress' && (
                                       <span className="text-amber-300">
-                                        🟡 AN KOU ({usedFolders}/{record.totalFolders} Folder)
+                                        {record.totalFolders >= 999
+                                          ? '🟡 AN KOU (👑 Ilimite ♾️)'
+                                          : `🟡 AN KOU (${usedFolders}/${record.totalFolders} Folder)`}
                                       </span>
                                     )}
                                     {status === 'burned' && (
@@ -1884,7 +2262,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                     )}
                                   </td>
                                   <td className="py-3 px-4 whitespace-nowrap text-xs text-zinc-300 tabular-nums">
-                                    Rete {record.remainingFolders} / {record.totalFolders} Folder
+                                    {record.totalFolders >= 999
+                                      ? '👑 Ilimite (♾️)'
+                                      : `Rete ${record.remainingFolders} / ${record.totalFolders} Folder`}
                                   </td>
                                   <td className="py-3 px-4 text-xs text-zinc-400 max-w-[140px] truncate">
                                     {record.note || '—'}
@@ -1893,7 +2273,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                     <div className="inline-flex items-center gap-2">
                                       <button
                                         type="button"
-                                        onClick={() => handleCopyForWhatsapp(record)}
+                                        onClick={() => handleCopyVipKeyMessage(record)}
                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B0C10] border border-zinc-700 hover:border-emerald-500 text-xs font-medium text-zinc-200 transition-colors cursor-pointer"
                                       >
                                         {isCopied ? (
@@ -1904,7 +2284,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                         ) : (
                                           <>
                                             <Copy className="h-3.5 w-3.5 text-zinc-400" />
-                                            <span>📋 Kopye Kle a pou WhatsApp</span>
+                                            <span>📋 Kopye Kle VIP la</span>
                                           </>
                                         )}
                                       </button>
@@ -1926,204 +2306,131 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       </div>
                     )}
                   </div>
-                </>
-              ) : activeTab === 'ads' ? (
-                /* 📢 Jere Anons (Adsterra / Monetag) */
-                <div className="space-y-5">
-                  {/* Master On/Off Switch Card */}
-                  <div
-                    className={`rounded-2xl border p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
-                      adDraftConfig.enabled
-                        ? 'border-emerald-500/40 bg-emerald-500/10'
-                        : 'border-rose-500/35 bg-rose-500/10'
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Megaphone className="h-5 w-5 text-emerald-400 shrink-0" />
-                        <h3 className="font-display text-base sm:text-lg font-bold text-white">
-                          📢 Sistèm Anons VidMate (Adsterra / Monetag)
-                        </h3>
-                      </div>
-                      <p className="text-xs text-zinc-300 leading-relaxed max-w-2xl">
-                        Anons yo parèt sèlman pou vizitè ki poko antre Kle VIP. Depi yon kliyan
-                        debloke sit la ak Kle VIP li, <strong className="text-white">tout anons yo kache otomatikman</strong>.
-                      </p>
-                    </div>
 
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={adDraftConfig.enabled}
-                      onClick={handleToggleMasterAds}
-                      className={`inline-flex items-center gap-3 px-4 py-3 rounded-xl border text-xs sm:text-sm font-extrabold whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
-                        adDraftConfig.enabled
-                          ? 'bg-emerald-500 border-emerald-400 text-zinc-950 hover:bg-emerald-400'
-                          : 'bg-[#0B0C10] border-rose-500/50 text-rose-300 hover:border-rose-400'
-                      }`}
-                    >
-                      <span>
-                        {adDraftConfig.enabled ? '🟢 Aktive Anons yo' : '🔴 Fèmen Anons yo'}
-                      </span>
-                    </button>
-                  </div>
-
-                  {adSaveBanner && (
-                    <div className="rounded-xl bg-emerald-500/15 border border-emerald-500/40 px-4 py-2.5 text-xs font-semibold text-emerald-200 flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-                      <span>{adSaveBanner}</span>
-                    </div>
-                  )}
-
-                  {/* Adsterra / Monetag Paste Form */}
+                  {/* Automated Online Checkout Links Manager (Payhip / USDT / Virtual Card) */}
                   <form
-                    onSubmit={handleSaveAdManager}
-                    className="rounded-2xl border border-zinc-800 bg-[#0E1015] p-5 space-y-5"
+                    onSubmit={handleSaveCheckoutLinks}
+                    className="rounded-xl bg-[#0E1015] border border-emerald-500/30 p-5 space-y-4"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
+                    <div className="flex items-start gap-2.5 border-b border-zinc-800/80 pb-3">
+                      <CreditCard className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
                       <div>
-                        <h4 className="font-display text-sm sm:text-base font-bold text-white">
-                          Kole Kòd Adsterra / Monetag ou yo (Oswa itilize Promo Pa Defo yo)
-                        </h4>
+                        <h3 className="font-display text-base font-bold text-white">
+                          💳 Lyen Peman Otomatik An Liy (Payhip / Crypto USDT / Kat Vityèl)
+                        </h3>
                         <p className="text-xs text-zinc-400 mt-0.5">
-                          Lè bwat yo vid, sit la montre bèl banyè promo kreyòl « {DEFAULT_PROMO_HEADLINE} » otomatikman.
+                          Kole lyen checkout otomatik ou yo pou kliyan yo ka peye epi resevwa Kle VIP
+                          yo touswit an liy, 100% otomatik.
                         </p>
                       </div>
-
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={adDraftConfig.enableSponsorPopup}
-                        onClick={handleToggleSponsorPopup}
-                        className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer shrink-0 ${
-                          adDraftConfig.enableSponsorPopup
-                            ? 'bg-amber-500/15 border-amber-400/50 text-amber-200'
-                            : 'bg-[#0B0C10] border-zinc-700 text-zinc-400'
-                        }`}
-                      >
-                        <Film className="h-3.5 w-3.5 shrink-0" />
-                        <span>
-                          {adDraftConfig.enableSponsorPopup
-                            ? '🎬 Popup Sponsor: AKTIF'
-                            : '🎬 Popup Sponsor: FÈMEN'}
-                        </span>
-                      </button>
                     </div>
 
-                    <div className="space-y-4">
-                      {/* 1. Banner Ad Script / HTML */}
-                      <div>
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <label
-                            htmlFor="ad-banner-script-input"
-                            className="text-xs font-semibold text-zinc-200"
-                          >
-                            1. Banner Ad Script / HTML (320×50 Mobil / 728×90 Desktop — Kole anba sit la)
-                          </label>
-                          <span className="text-[11px] font-mono text-emerald-400">
-                            {adDraftConfig.bannerAdHtml.trim() ? '🟢 Kòd Live Aktif' : '✨ Promo Pa Defo'}
-                          </span>
-                        </div>
-                        <textarea
-                          id="ad-banner-script-input"
-                          rows={4}
-                          value={adDraftConfig.bannerAdHtml}
-                          onChange={(e) =>
-                            setAdDraftConfig((prev) => ({
-                              ...prev,
-                              bannerAdHtml: e.target.value,
-                            }))
-                          }
-                          placeholder={`<script type="text/javascript">\n  atOptions = { 'key': '...', 'format': 'iframe', 'height': 50, 'width': 320 };\n</script>\n<script src="https://..."></script>`}
-                          spellCheck={false}
-                          className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 p-3 font-mono text-xs text-emerald-200 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none"
-                        />
+                    {checkoutSaveBanner && (
+                      <div className="rounded-xl bg-emerald-500/15 border border-emerald-500/40 px-4 py-2.5 text-xs font-semibold text-emerald-200 flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                        <span>{checkoutSaveBanner}</span>
                       </div>
+                    )}
 
-                      {/* 2. In-Feed Native Ad Script */}
-                      <div>
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <label
-                            htmlFor="ad-native-script-input"
-                            className="text-xs font-semibold text-zinc-200"
-                          >
-                            2. In-Feed Native Ad Script / HTML (Parèt ant chak 4 Folder .ZIP)
-                          </label>
-                          <span className="text-[11px] font-mono text-emerald-400">
-                            {adDraftConfig.nativeAdHtml.trim() ? '🟢 Kòd Live Aktif' : '✨ Promo Pa Defo'}
-                          </span>
-                        </div>
-                        <textarea
-                          id="ad-native-script-input"
-                          rows={4}
-                          value={adDraftConfig.nativeAdHtml}
-                          onChange={(e) =>
-                            setAdDraftConfig((prev) => ({
-                              ...prev,
-                              nativeAdHtml: e.target.value,
-                            }))
-                          }
-                          placeholder={`<script async="async" data-cfasync="false" src="https://.../invoke.js"></script>\n<div id="container-..."></div>`}
-                          spellCheck={false}
-                          className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 p-3 font-mono text-xs text-emerald-200 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none"
-                        />
-                      </div>
-
-                      {/* 3. Direct SmartLink URL */}
-                      <div>
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <label
-                            htmlFor="ad-smartlink-url-input"
-                            className="text-xs font-semibold text-zinc-200"
-                          >
-                            3. Direct SmartLink URL (Adsterra Direct Link / Monetag SmartLink)
-                          </label>
-                          <span className="text-[11px] font-mono text-emerald-400">
-                            {adDraftConfig.smartLinkUrl.trim() ? '🟢 Lyen Aktif' : '💬 WhatsApp Pa Defo'}
-                          </span>
-                        </div>
-                        <input
-                          id="ad-smartlink-url-input"
-                          type="url"
-                          value={adDraftConfig.smartLinkUrl}
-                          onChange={(e) => {
-                            setAdDraftConfig((prev) => ({
-                              ...prev,
-                              smartLinkUrl: e.target.value,
-                            }));
-                            if (adUrlError) setAdUrlError(null);
-                          }}
-                          placeholder="https://www.profitablegatecpm.com/... (oswa Monetag Direct Link)"
-                          className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 px-3.5 py-2.5 font-mono text-xs sm:text-sm text-white placeholder:font-sans placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none"
-                        />
-                        {adUrlError && (
-                          <p role="alert" className="text-xs text-rose-400 mt-1.5 font-medium">
-                            {adUrlError}
-                          </p>
-                        )}
-                      </div>
+                    <div>
+                      <label
+                        htmlFor="default-checkout-url-input"
+                        className="block text-xs font-semibold text-zinc-200 mb-1.5"
+                      >
+                        Lyen Peman Prensipal (Itilize pou tout plan si pa gen lyen espesifik)
+                      </label>
+                      <input
+                        id="default-checkout-url-input"
+                        type="url"
+                        value={checkoutDraftConfig.defaultCheckoutUrl}
+                        onChange={(e) => {
+                          setCheckoutDraftConfig((prev) => ({
+                            ...prev,
+                            defaultCheckoutUrl: e.target.value,
+                          }));
+                          if (checkoutUrlError) setCheckoutUrlError(null);
+                        }}
+                        placeholder="https://payhip.com/... oswa https://nowpayments.io/..."
+                        className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 px-3.5 py-2.5 font-mono text-xs sm:text-sm text-white placeholder:font-sans placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none"
+                      />
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-zinc-800/80">
-                      <button
-                        type="button"
-                        onClick={handleResetAds}
-                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-zinc-700 hover:border-amber-500/60 bg-[#0B0C10] text-xs font-semibold text-zinc-300 hover:text-amber-200 transition-colors cursor-pointer"
-                      >
-                        <RotateCcw className="h-3.5 w-3.5" />
-                        <span>🧹 Reyajiste nan Promo Pa Defo</span>
-                      </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {(
+                        [
+                          {
+                            id: '10-folder',
+                            label: 'Lyen Plan 9 + 1 Folder GRATIS (10 Folder Total)',
+                            spanFull: false,
+                          },
+                          {
+                            id: '21-folder',
+                            label: 'Lyen Plan 20 + 1 Folder GRATIS (21 Folder · POPILÈ)',
+                            spanFull: false,
+                          },
+                          {
+                            id: '36-folder',
+                            label: 'Lyen Plan 35 + 1 Folder GRATIS (36 Folder Total)',
+                            spanFull: false,
+                          },
+                          {
+                            id: '55-folder',
+                            label: 'Lyen Plan 55 Folder (5,500 Mizik)',
+                            spanFull: false,
+                          },
+                          {
+                            id: 'unlimited-vip',
+                            label: 'Lyen Plan 👑 KLE VIP ILIMITE (♾️)',
+                            spanFull: true,
+                          },
+                        ] as const
+                      ).map((item) => (
+                        <div key={item.id} className={item.spanFull ? 'sm:col-span-2' : ''}>
+                          <label
+                            htmlFor={`checkout-url-${item.id}`}
+                            className="block text-[11px] font-semibold text-zinc-300 mb-1"
+                          >
+                            {item.label} (Opsyonèl)
+                          </label>
+                          <input
+                            id={`checkout-url-${item.id}`}
+                            type="url"
+                            value={checkoutDraftConfig.planLinks[item.id]}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setCheckoutDraftConfig((prev) => ({
+                                ...prev,
+                                planLinks: {
+                                  ...prev.planLinks,
+                                  [item.id]: val,
+                                },
+                              }));
+                              if (checkoutUrlError) setCheckoutUrlError(null);
+                            }}
+                            placeholder="https://..."
+                            className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 px-3 py-2 font-mono text-xs text-white placeholder:font-sans placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none"
+                          />
+                        </div>
+                      ))}
+                    </div>
 
+                    {checkoutUrlError && (
+                      <p role="alert" className="text-xs text-rose-400 font-medium">
+                        {checkoutUrlError}
+                      </p>
+                    )}
+
+                    <div className="flex justify-end pt-1">
                       <button
                         type="submit"
                         className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-display font-extrabold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer"
                       >
                         <Save className="h-4 w-4 shrink-0" />
-                        <span>💾 Anrejistre Kòd Anons yo</span>
+                        <span>💾 Anrejistre Lyen Peman yo</span>
                       </button>
                     </div>
                   </form>
-                </div>
+                </>
               ) : !selectedPack ? (
                 <div className="rounded-xl border border-zinc-800 bg-[#0E1015] p-8 text-center text-sm text-zinc-400">
                   Pa gen okenn folder .ZIP disponib pou w konfigire. Chwazi yon folder anlè a oswa

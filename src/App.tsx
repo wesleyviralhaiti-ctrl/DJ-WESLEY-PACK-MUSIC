@@ -3,19 +3,19 @@ import {
   Download,
   Lock,
   Unlock,
-  MessageCircle,
   KeyRound,
   FolderCheck,
   FolderArchive,
   LogOut,
   Clock,
+  Zap,
 } from 'lucide-react';
 import {
   ACTIVE_KEY_STORAGE_KEY,
   HERO_IMAGE,
+  FolderPlan,
   MusicPack,
   VipKeyRecord,
-  WHATSAPP_BASE_URL,
   consumeFolderCredit,
   formatZipFolderFilename,
   getAllMusicPacks,
@@ -27,13 +27,21 @@ import { buildVirtualDjColorZip } from './utils/id3Mp3Packager';
 import { WelcomeVipModal } from './components/WelcomeVipModal';
 import { AdminPanelModal } from './components/AdminPanelModal';
 import { QuotaExhaustedModal } from './components/QuotaExhaustedModal';
+import { DirectCheckoutModal } from './components/DirectCheckoutModal';
 import { ZipFilenameText } from './components/ZipFilenameText';
 import { PWAInstallButton } from './components/PWAInstallButton';
-import { StickyBannerAd, NativeSponsorCard, InterstitialAdModal } from './components/AdSlots';
-import { loadAdConfig } from './data/adConfig';
+import { CountrySelector } from './components/CountrySelector';
+import { loadSelectedCountryCode, saveSelectedCountryCode } from './data/countries';
+import {
+  ACTIVE_CHECKOUT_ORDER_STORAGE_KEY,
+  getPaymentOrderById,
+  loadActiveCheckoutOrderId,
+  ORDERS_UPDATED_EVENT,
+  PAYMENT_ORDERS_STORAGE_KEY,
+  saveActiveCheckoutOrderId,
+} from './data/paymentOrders';
 
 const ADMIN_SESSION_STORAGE_KEY = 'wesley_admin_auth_session_v1';
-const INTERSTITIAL_AD_SESSION_KEY = 'wesley_interstitial_ad_shown_v1';
 
 function loadActiveKeyRecord(): VipKeyRecord | null {
   try {
@@ -75,15 +83,29 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [colorVersion, setColorVersion] = useState<number>(0);
   const [customPacksVersion, setCustomPacksVersion] = useState<number>(0);
-  const [adConfigVersion, setAdConfigVersion] = useState<number>(0);
-  const [isStickyBannerDismissed, setIsStickyBannerDismissed] = useState<boolean>(false);
-  const [isInterstitialOpen, setIsInterstitialOpen] = useState<boolean>(false);
   const [packagingPackId, setPackagingPackId] = useState<string | null>(null);
+  const [selectedCountryCode, setSelectedCountryCode] = useState<string>(() =>
+    loadSelectedCountryCode()
+  );
+  const [checkoutPlan, setCheckoutPlan] = useState<FolderPlan | null>(null);
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(() =>
+    loadActiveCheckoutOrderId()
+  );
+  const [isDirectCheckoutOpen, setIsDirectCheckoutOpen] = useState<boolean>(false);
 
-  const adConfig = useMemo(() => {
-    void adConfigVersion;
-    return loadAdConfig();
-  }, [adConfigVersion]);
+  const handleSelectCountry = useCallback((code: string) => {
+    const saved = saveSelectedCountryCode(code);
+    setSelectedCountryCode(saved);
+  }, []);
+
+  const handleStartDirectCheckout = useCallback((plan: FolderPlan) => {
+    saveActiveCheckoutOrderId(null);
+    setActiveOrderId(null);
+    setCheckoutPlan(plan);
+    setIsWelcomeOpen(false);
+    setIsExhaustedOpen(false);
+    setIsDirectCheckoutOpen(true);
+  }, []);
 
   const allPacks = useMemo(() => {
     void customPacksVersion;
@@ -118,13 +140,53 @@ export default function App() {
     });
   }, []);
 
+  // Automatically pop the generated short VIP Key straight onto the buyer's screen
+  // the moment Admin VIP clicks "✔ Valide & Voye Kle VIP" (even if the modal was closed).
+  useEffect(() => {
+    const checkApprovedOrder = () => {
+      const pendingOrderId = loadActiveCheckoutOrderId();
+      if (!pendingOrderId) return;
+      const order = getPaymentOrderById(pendingOrderId);
+      if (order && order.status === 'approved' && order.issuedVipKey) {
+        setActiveOrderId(order.id);
+        setIsWelcomeOpen(false);
+        setIsExhaustedOpen(false);
+        setIsDirectCheckoutOpen(true);
+        // Mark as surfaced so closing the modal won't forcefully re-open it 1.2s later
+        saveActiveCheckoutOrderId(null);
+      }
+    };
+
+    const handleStorage = (e: StorageEvent) => {
+      if (
+        e.key === PAYMENT_ORDERS_STORAGE_KEY ||
+        e.key === ACTIVE_CHECKOUT_ORDER_STORAGE_KEY ||
+        e.key === null
+      ) {
+        checkApprovedOrder();
+      }
+    };
+
+    checkApprovedOrder();
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener(ORDERS_UPDATED_EVENT, checkApprovedOrder);
+    const poll = window.setInterval(checkApprovedOrder, 1200);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener(ORDERS_UPDATED_EVENT, checkApprovedOrder);
+      window.clearInterval(poll);
+    };
+  }, []);
+
   const handleUnlock = useCallback(
     (record: VipKeyRecord) => {
       window.localStorage.setItem(ACTIVE_KEY_STORAGE_KEY, record.code);
       setActiveKey(record);
-      setIsInterstitialOpen(false);
       showToast(
-        `Aksè VIP debloke! Kredi Folder: ${record.remainingFolders} / ${record.totalFolders} Folder`
+        record.totalFolders >= 999
+          ? '👑 Aksè VIP Ilimite debloke pou tout katalòg la!'
+          : `Aksè VIP debloke! Kredi Folder: ${record.remainingFolders} / ${record.totalFolders} Folder`
       );
     },
     [showToast]
@@ -233,7 +295,9 @@ export default function App() {
         setIsExhaustedOpen(true);
       } else {
         showToast(
-          `Telechajman .ZIP lanse! Kredi ki rete: ${result.updatedRecord.remainingFolders} / ${result.updatedRecord.totalFolders} Folder`
+          result.updatedRecord.totalFolders >= 999
+            ? 'Telechajman .ZIP lanse! Aksè VIP Ilimite aktif.'
+            : `Telechajman .ZIP lanse! Kredi ki rete: ${result.updatedRecord.remainingFolders} / ${result.updatedRecord.totalFolders} Folder`
         );
       }
     },
@@ -251,50 +315,21 @@ export default function App() {
   const hasActiveKey = Boolean(activeKey);
   const hasRemainingCredits = Boolean(activeKey && !activeKey.burned && activeKey.remainingFolders > 0);
   const isUnlockedForDownload = Boolean((isAdminAuthenticated && isAdminFreeMode) || hasRemainingCredits);
-  const shouldShowAds = adConfig.enabled && !isUnlockedForDownload;
-  const shouldShowStickyBanner = shouldShowAds && !isStickyBannerDismissed;
-
-  // Automatically show VidMate-style 4-second interstitial popup 1.5s after non-VIP visitor lands (once per session)
-  useEffect(() => {
-    if (!shouldShowAds || !adConfig.enableSponsorPopup) {
-      setIsInterstitialOpen(false);
-      return;
-    }
-
-    try {
-      if (window.sessionStorage.getItem(INTERSTITIAL_AD_SESSION_KEY) === 'true') {
-        return;
-      }
-    } catch {
-      // ignore storage errors
-    }
-
-    const timer = window.setTimeout(() => {
-      try {
-        window.sessionStorage.setItem(INTERSTITIAL_AD_SESSION_KEY, 'true');
-      } catch {
-        // ignore storage errors
-      }
-      setIsInterstitialOpen(true);
-    }, 500);
-
-    return () => window.clearTimeout(timer);
-  }, [shouldShowAds, adConfig.enableSponsorPopup]);
 
   return (
     <div className="min-h-[100dvh] pb-[env(safe-area-inset-bottom)] bg-[#0B0C10] text-zinc-100 flex flex-col">
       {/* Top Bar Contract: 3 clean zones separated by gap-8 */}
       <header className="sticky top-0 z-30 pt-[env(safe-area-inset-top)] border-b border-zinc-800/80 bg-[#0B0C10]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-8 px-4 sm:px-6 h-16">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 sm:gap-6 px-3 sm:px-6 h-16">
           {/* Zone 1: Brand wordmark */}
           <a
             href="#top"
-            className="font-display text-lg font-bold tracking-tight text-white whitespace-nowrap shrink-0"
+            className="font-display text-sm sm:text-lg font-bold tracking-tight text-white whitespace-nowrap truncate min-w-0"
           >
             WESLEY MUSIC PACKS
           </a>
 
-          {/* Zone 2: Clean single-line nav links (Plan Folder tab removed) */}
+          {/* Zone 2: Clean single-line nav links */}
           <nav
             aria-label="Navigasyon prensipal"
             className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-400"
@@ -320,8 +355,14 @@ export default function App() {
             </button>
           </nav>
 
-          {/* Zone 3: 1 Primary Action / Live Folder Quota Badge */}
-          <div className="flex items-center shrink-0">
+          {/* Zone 3: Worldwide Country & Currency Selector + Primary Action / Quota Badge */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            <CountrySelector
+              selectedCountryCode={selectedCountryCode}
+              onSelectCountry={handleSelectCountry}
+              align="right"
+            />
+
             {hasActiveKey && activeKey ? (
               <button
                 type="button"
@@ -333,15 +374,23 @@ export default function App() {
                     setIsWelcomeOpen(true);
                   }
                 }}
-                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border text-xs font-semibold whitespace-nowrap shrink-0 tabular-nums transition-colors cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-lg border text-xs font-semibold whitespace-nowrap shrink-0 tabular-nums transition-colors cursor-pointer ${
                   hasRemainingCredits
                     ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25'
                     : 'bg-rose-500/15 border-rose-500/40 text-rose-300 hover:bg-rose-500/25'
                 }`}
               >
                 <span>
-                  📁 Kredi Folder ki rete: {activeKey.remainingFolders} /{' '}
-                  {activeKey.totalFolders} Folder
+                  {activeKey.totalFolders >= 999 ? (
+                    '👑 VIP Ilimite'
+                  ) : (
+                    <>
+                      <span className="hidden sm:inline">📁 Kredi Folder ki rete: </span>
+                      <span className="sm:hidden">📁 </span>
+                      {activeKey.remainingFolders} / {activeKey.totalFolders}
+                      <span className="hidden sm:inline"> Folder</span>
+                    </>
+                  )}
                 </span>
               </button>
             ) : (
@@ -351,10 +400,11 @@ export default function App() {
                   setPendingPack(null);
                   setIsWelcomeOpen(true);
                 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold whitespace-nowrap shrink-0 transition-colors cursor-pointer"
               >
-                <KeyRound className="h-3.5 w-3.5" />
-                <span>Antre Kle VIP</span>
+                <KeyRound className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Antre Kle VIP</span>
+                <span className="sm:hidden">Kle VIP</span>
               </button>
             )}
           </div>
@@ -423,8 +473,9 @@ export default function App() {
               }`}
             >
               <span className="font-semibold">
-                📁 Kredi Folder ki rete: {activeKey.remainingFolders} / {activeKey.totalFolders}{' '}
-                Folder
+                {activeKey.totalFolders >= 999
+                  ? '👑 Aksè VIP Ilimite Aktif (Tout Katalòg la)'
+                  : `📁 Kredi Folder ki rete: ${activeKey.remainingFolders} / ${activeKey.totalFolders} Folder`}
               </span>
               <span aria-hidden="true" className="opacity-50">
                 ·
@@ -493,15 +544,17 @@ export default function App() {
                         <KeyRound className="h-4 w-4" />
                         <span>Debloke ak Kle VIP</span>
                       </button>
-                      <a
-                        href={WHATSAPP_BASE_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 min-h-[46px] px-5 py-3 rounded-xl border border-zinc-700 hover:border-zinc-500 text-zinc-100 text-sm font-semibold whitespace-nowrap transition-colors"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPendingPack(null);
+                          setIsWelcomeOpen(true);
+                        }}
+                        className="inline-flex items-center justify-center gap-2 min-h-[46px] px-5 py-3 rounded-xl border border-zinc-700 hover:border-emerald-500/60 text-zinc-100 text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer"
                       >
-                        <MessageCircle className="h-4 w-4 text-[#25D366]" />
-                        <span>Achte Kle sou WhatsApp</span>
-                      </a>
+                        <Zap className="h-4 w-4 text-emerald-400" />
+                        <span>Achte Kle VIP Otomatik</span>
+                      </button>
                     </>
                   )}
                   <PWAInstallButton variant="hero" />
@@ -551,16 +604,15 @@ export default function App() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {allPacks.map((pack, idx) => {
+                {allPacks.map((pack) => {
                   const isComingSoon = Boolean(pack.isComingSoon);
                   const isPackaging = packagingPackId === pack.id;
                   const zipFilename = formatZipFolderFilename(pack);
-                  const showNativeSponsorAfter = shouldShowAds && (idx + 1) % 4 === 0;
                   void colorVersion;
 
                   return (
-                    <React.Fragment key={pack.id}>
                       <article
+                        key={pack.id}
                         className={`group flex flex-col justify-between rounded-2xl border p-6 transition-all duration-200 hover:-translate-y-0.5 ${
                         isComingSoon
                           ? 'bg-gradient-to-b from-amber-500/[0.06] to-[#13151B] border-amber-500/45 shadow-[0_0_24px_rgba(245,158,11,0.07)]'
@@ -660,18 +712,6 @@ export default function App() {
                         )}
                       </div>
                       </article>
-
-                      {showNativeSponsorAfter && (
-                        <NativeSponsorCard
-                          adConfig={adConfig}
-                          slotIndex={Math.floor((idx + 1) / 4)}
-                          onOpenVipModal={() => {
-                            setPendingPack(null);
-                            setIsWelcomeOpen(true);
-                          }}
-                        />
-                      )}
-                    </React.Fragment>
                   );
                 })}
               </div>
@@ -688,13 +728,13 @@ export default function App() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="rounded-2xl bg-[#13151B] border border-zinc-800 p-6">
-                <p className="font-mono text-xs text-emerald-400 font-semibold">01. Achte Kle VIP</p>
+                <p className="font-mono text-xs text-emerald-400 font-semibold">01. Achte Otomatik</p>
                 <h3 className="mt-2 font-display text-lg font-bold text-white">
-                  Kontakte Admin sou WhatsApp
+                  Peye An Liy oswa Sèvi ak Kat Prepeye
                 </h3>
                 <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
-                  Ekri Wesley sou +509 38569265 pou w chwazi kantite folder .ZIP ou bezwen an
-                  (1, 2, 3, 5, oswa 10 Folder) epi resevwa Kle VIP inik ou a.
+                  Chwazi plan ou bezwen an (10, 21, 36, 55 Folder oswa VIP Ilimite) epi peye ak Kat
+                  Vityèl, Kat Bankè oswa Crypto USDT pou w resevwa Kle VIP ou a otomatikman.
                 </p>
               </div>
 
@@ -726,11 +766,7 @@ export default function App() {
       </main>
 
       {/* Clean Footer */}
-      <footer
-        className={`border-t border-zinc-800/80 bg-[#090A0D] ${
-          shouldShowStickyBanner ? 'pb-24 sm:pb-28' : ''
-        }`}
-      >
+      <footer className="border-t border-zinc-800/80 bg-[#090A0D]">
         <div className="mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-6xl px-4 sm:px-6 py-8 text-xs text-zinc-400">
           <p>© {new Date().getFullYear()} WESLEY MUSIC PACKS. Tout dwa rezève.</p>
           <div className="flex flex-wrap items-center gap-6">
@@ -751,14 +787,6 @@ export default function App() {
             >
               Admin Panel
             </button>
-            <a
-              href={WHATSAPP_BASE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-zinc-200 transition-colors"
-            >
-              WhatsApp Admin (+509 38569265)
-            </a>
             <PWAInstallButton variant="footer" />
           </div>
         </div>
@@ -770,6 +798,9 @@ export default function App() {
         allPacks={allPacks}
         activeKey={activeKey}
         pendingPack={pendingPack}
+        selectedCountryCode={selectedCountryCode}
+        onSelectCountry={handleSelectCountry}
+        onStartDirectCheckout={handleStartDirectCheckout}
         onUnlock={handleUnlock}
         onUnlockOrDownloadPack={(pack) => void handleUnlockOrDownloadPack(pack)}
         onBrowsePacks={() => {
@@ -778,17 +809,13 @@ export default function App() {
         }}
       />
 
-      {/* Automatic 4-Second VidMate-Style Interstitial Ad Overlay (1.5s after landing, once per session) */}
-      <InterstitialAdModal
-        isOpen={isInterstitialOpen && shouldShowAds}
-        adConfig={adConfig}
-        onClose={() => setIsInterstitialOpen(false)}
-      />
-
       {/* Quota Exhausted Renewal Modal (when 0 / Y folders remain) */}
       <QuotaExhaustedModal
         isOpen={isExhaustedOpen}
         exhaustedKeyCode={exhaustedKeyCode}
+        selectedCountryCode={selectedCountryCode}
+        onSelectCountry={handleSelectCountry}
+        onStartDirectCheckout={handleStartDirectCheckout}
         onClose={() => setIsExhaustedOpen(false)}
         onEnterNewKey={() => {
           setIsExhaustedOpen(false);
@@ -797,7 +824,23 @@ export default function App() {
         }}
       />
 
-      {/* Password-Protected Admin Key Generator, Folder Deleter, Uploader & Ad Manager Modal */}
+      {/* Built-in Country-Aware Direct Checkout (Natcash Haiti / USDT TRC20 International) */}
+      <DirectCheckoutModal
+        isOpen={isDirectCheckoutOpen}
+        plan={checkoutPlan}
+        selectedCountryCode={selectedCountryCode}
+        initialOrderId={activeOrderId}
+        onClose={() => {
+          setIsDirectCheckoutOpen(false);
+          setActiveOrderId(loadActiveCheckoutOrderId());
+        }}
+        onUnlockWithKey={(record) => {
+          handleUnlock(record);
+          setIsDirectCheckoutOpen(false);
+        }}
+      />
+
+      {/* Password-Protected Admin Key Generator, Folder Deleter & Uploader Modal */}
       <AdminPanelModal
         isOpen={isAdminOpen}
         isAuthenticated={isAdminAuthenticated}
@@ -810,17 +853,7 @@ export default function App() {
         onKeysChanged={syncActiveKeyFromStore}
         onColorsChanged={() => setColorVersion((v) => v + 1)}
         onCustomPacksChanged={() => setCustomPacksVersion((v) => v + 1)}
-        onAdConfigChanged={() => {
-          setAdConfigVersion((v) => v + 1);
-          setIsStickyBannerDismissed(false);
-        }}
-      />
-
-      {/* Bottom Sticky Mobile/Desktop Banner Ad (Auto-hidden for VIP buyers) */}
-      <StickyBannerAd
-        adConfig={adConfig}
-        isVisible={shouldShowStickyBanner}
-        onDismiss={() => setIsStickyBannerDismissed(true)}
+        onCheckoutConfigChanged={() => {}}
       />
 
       {/* Non-intrusive Feedback Toast */}
@@ -828,9 +861,7 @@ export default function App() {
         <div
           role="status"
           aria-live="polite"
-          className={`fixed right-5 z-50 flex items-center gap-2.5 rounded-xl bg-[#13151B] border border-emerald-500/40 px-4 py-3 text-sm font-medium text-emerald-200 shadow-xl max-w-sm ${
-            shouldShowStickyBanner ? 'bottom-24 sm:bottom-28' : 'bottom-5'
-          }`}
+          className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-xl bg-[#13151B] border border-emerald-500/40 px-4 py-3 text-sm font-medium text-emerald-200 shadow-xl max-w-sm"
         >
           <FolderCheck className="h-4 w-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>

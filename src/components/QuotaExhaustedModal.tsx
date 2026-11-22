@@ -1,10 +1,20 @@
-import React from 'react';
-import { X, KeyRound } from 'lucide-react';
-import { WHATSAPP_RENEWAL_URL } from '../data/musicPacks';
+import React, { useState } from 'react';
+import { X, KeyRound, Zap } from 'lucide-react';
+import { FOLDER_PLANS, FolderPlan } from '../data/musicPacks';
+import {
+  getCountryByCode,
+  getFormattedPlanPrice,
+  getRegionCurrencyBadge,
+} from '../data/countries';
+import { getUsdtAmountForPlan } from '../data/paymentOrders';
+import { CountrySelector } from './CountrySelector';
 
 interface QuotaExhaustedModalProps {
   isOpen: boolean;
   exhaustedKeyCode?: string | null;
+  selectedCountryCode: string;
+  onSelectCountry: (code: string) => void;
+  onStartDirectCheckout: (plan: FolderPlan) => void;
   onClose: () => void;
   onEnterNewKey: () => void;
 }
@@ -12,10 +22,23 @@ interface QuotaExhaustedModalProps {
 export const QuotaExhaustedModal: React.FC<QuotaExhaustedModalProps> = ({
   isOpen,
   exhaustedKeyCode,
+  selectedCountryCode,
+  onSelectCountry,
+  onStartDirectCheckout,
   onClose,
   onEnterNewKey,
 }) => {
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('21-folder');
+
   if (!isOpen) return null;
+
+  const selectedPlan =
+    FOLDER_PLANS.find((p) => p.id === selectedPlanId) ?? FOLDER_PLANS[1] ?? FOLDER_PLANS[0];
+  const selectedCountry = getCountryByCode(selectedCountryCode);
+  const isHaiti = selectedCountryCode.trim().toUpperCase() === 'HT';
+  const selectedPlanPrice = getFormattedPlanPrice(selectedPlan.id, selectedCountryCode);
+  const selectedUsdtAmount = getUsdtAmountForPlan(selectedPlan.id);
+  const currencyBadge = getRegionCurrencyBadge(selectedCountryCode);
 
   return (
     <div
@@ -49,19 +72,98 @@ export const QuotaExhaustedModal: React.FC<QuotaExhaustedModalProps> = ({
           )}
 
           <p className="text-sm sm:text-base text-zinc-300 leading-relaxed">
-            Ou fin telechaje tout folder .ZIP ki te nan plan ou a. Achte yon lòt kòd sou WhatsApp:
-            +509 38569265 pou w telechaje plis folder!
+            Ou fin telechaje tout folder .ZIP ki te nan plan ou a. Chwazi yon nouvo plan anba a
+            pou w resevwa yon lòt Kle VIP otomatikman oswa antre yon Kòd Prepeye!
           </p>
 
-          <div className="pt-3 space-y-3">
-            <a
-              href={WHATSAPP_RENEWAL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex w-full min-h-[52px] items-center justify-center rounded-xl bg-[#25D366] hover:bg-[#20BD5A] active:bg-[#1DA851] text-zinc-950 font-display font-bold text-sm sm:text-base px-5 py-3.5 transition-colors"
+          <div className="flex items-center justify-between gap-2 pt-1 text-left">
+            <span className="text-xs text-zinc-400">
+              Pri pou {selectedCountry.flag}{' '}
+              <strong className="text-zinc-200">{selectedCountry.name}</strong> (
+              <span className="font-mono text-emerald-300">{currencyBadge}</span>)
+            </span>
+            <CountrySelector
+              compact
+              selectedCountryCode={selectedCountryCode}
+              onSelectCountry={onSelectCountry}
+              align="right"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-left">
+            {FOLDER_PLANS.map((plan) => {
+              const isSelected = selectedPlan.id === plan.id;
+              const isUnlimited = plan.id === 'unlimited-vip';
+              const planPrice = getFormattedPlanPrice(plan.id, selectedCountryCode);
+              return (
+                <button
+                  key={plan.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPlanId(plan.id);
+                    onStartDirectCheckout(plan);
+                  }}
+                  className={`rounded-xl border p-3 transition-colors cursor-pointer ${
+                    isUnlimited ? 'sm:col-span-2' : ''
+                  } ${
+                    isUnlimited
+                      ? isSelected
+                        ? 'bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/15 border-amber-300 text-white shadow-[0_0_20px_rgba(245,158,11,0.25)]'
+                        : 'bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-[#0B0C10] border-amber-400/55 text-zinc-100 hover:border-amber-300'
+                      : isSelected
+                        ? 'bg-emerald-500/15 border-emerald-400 text-white'
+                        : 'bg-[#0B0C10] border-zinc-800 text-zinc-300 hover:border-zinc-600'
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
+                    <span
+                      className={`font-display text-xs sm:text-sm font-extrabold ${
+                        isUnlimited ? 'text-amber-300' : 'text-white'
+                      }`}
+                    >
+                      {plan.shortLabel}
+                    </span>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {plan.recommended && (
+                        <span className="rounded bg-amber-400/20 border border-amber-400/45 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-amber-300">
+                          POPILÈ
+                        </span>
+                      )}
+                      {plan.badge && (
+                        <span className="rounded bg-emerald-500/15 border border-emerald-400/40 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                          {plan.badge}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div
+                    className={`mt-1 font-mono text-xs font-extrabold tabular-nums ${
+                      isUnlimited ? 'text-amber-200' : 'text-emerald-300'
+                    }`}
+                  >
+                    {planPrice}
+                  </div>
+                  <div className="text-[11px] font-mono text-zinc-300 mt-0.5">
+                    {plan.subtitle}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="pt-1 space-y-3">
+            <button
+              type="button"
+              onClick={() => onStartDirectCheckout(selectedPlan)}
+              className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400 hover:brightness-110 text-zinc-950 font-display font-extrabold text-xs sm:text-sm px-4 py-3.5 shadow-[0_0_24px_rgba(16,185,129,0.4)] transition-all cursor-pointer"
             >
-              📲 Achte yon lòt kòd sou WhatsApp: +509 38569265
-            </a>
+              <Zap className="h-4 w-4 shrink-0" />
+              <span>
+                {isHaiti
+                  ? `⚡ PEYE AK NATCASH (${selectedPlan.shortLabel} · ${selectedPlanPrice})`
+                  : `⚡ PEYE AK USDT TRC20 (${selectedPlan.shortLabel} · ${selectedUsdtAmount} USDT)`}
+              </span>
+            </button>
 
             <button
               type="button"
@@ -69,11 +171,18 @@ export const QuotaExhaustedModal: React.FC<QuotaExhaustedModalProps> = ({
               className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl border border-zinc-700 hover:border-zinc-500 text-zinc-200 text-sm font-semibold px-4 py-2.5 transition-colors cursor-pointer"
             >
               <KeyRound className="h-4 w-4 text-emerald-400" />
-              <span>Antre yon Nouvo Kle VIP</span>
+              <span>🔑 Antre yon Nouvo Kle VIP / Kat Prepeye</span>
             </button>
+
+            <p className="text-xs text-zinc-400 leading-relaxed pt-1">
+              {isHaiti
+                ? '🇭🇹 Ayiti: Peye dirèkteman ak Natcash (+509 56568810) epi resevwa Kle VIP ou touswit sou ekran an!'
+                : `🌐 Entènasyonal (${selectedCountry.flag}): Peye an liy ak USDT (TRC20) pou w resevwa Kle VIP ou touswit sou ekran an!`}
+            </p>
           </div>
         </div>
       </div>
     </div>
   );
 };
+
