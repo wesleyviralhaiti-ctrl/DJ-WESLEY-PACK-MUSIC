@@ -23,8 +23,8 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ variant = 'h
         onClick={() => void install()}
         className={
           variant === 'hero'
-            ? 'inline-flex items-center justify-center gap-2 min-h-[46px] px-4 py-3 rounded-xl border border-emerald-500/40 bg-[#090A0D] hover:border-emerald-400 text-emerald-300 text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer'
-            : 'inline-flex items-center gap-1.5 hover:text-emerald-300 text-emerald-400 font-medium transition-colors cursor-pointer'
+            ? 'inline-flex items-center justify-center gap-2 min-h-[46px] px-4 py-3 rounded-xl border border-[#10B981]/40 bg-[#262A30] hover:border-[#10B981] text-emerald-300 text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer'
+            : 'inline-flex items-center gap-1.5 hover:text-emerald-300 text-[#10B981] font-medium transition-colors cursor-pointer'
         }
       >
         <Smartphone className="h-4 w-4 shrink-0" />
@@ -42,8 +42,8 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ variant = 'h
           onClick={() => setShowIOSGuide(true)}
           className={
             variant === 'hero'
-              ? 'inline-flex items-center justify-center gap-2 min-h-[46px] px-4 py-3 rounded-xl border border-emerald-500/40 bg-[#090A0D] hover:border-emerald-400 text-emerald-300 text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer'
-              : 'inline-flex items-center gap-1.5 hover:text-emerald-300 text-emerald-400 font-medium transition-colors cursor-pointer'
+              ? 'inline-flex items-center justify-center gap-2 min-h-[46px] px-4 py-3 rounded-xl border border-[#10B981]/40 bg-[#262A30] hover:border-[#10B981] text-emerald-300 text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer'
+              : 'inline-flex items-center gap-1.5 hover:text-emerald-300 text-[#10B981] font-medium transition-colors cursor-pointer'
           }
         >
           <Smartphone className="h-4 w-4 shrink-0" />
@@ -52,17 +52,17 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ variant = 'h
 
         {showIOSGuide && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#14161A]/80 backdrop-blur-sm p-4"
             role="dialog"
             aria-modal="true"
             aria-labelledby="ios-install-heading"
           >
-            <div className="relative w-full max-w-sm rounded-2xl bg-[#090A0D] border border-emerald-500/40 p-6 shadow-2xl space-y-4">
+            <div className="relative w-full max-w-sm rounded-2xl bg-[#262A30] border border-[#10B981]/40 p-6 shadow-2xl space-y-4">
               <button
                 type="button"
                 onClick={() => setShowIOSGuide(false)}
                 aria-label="Fèmen"
-                className="absolute top-3.5 right-3.5 flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white cursor-pointer"
+                className="absolute top-3.5 right-3.5 flex h-9 w-9 items-center justify-center rounded-lg text-[#9CA3AF] hover:bg-[#363B44] hover:text-[#F3F4F6] cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -71,31 +71,31 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ variant = 'h
                 <img
                   src="/apple-touch-icon.png"
                   alt="Wesley Music Icon"
-                  className="h-12 w-12 rounded-xl border border-emerald-500/40 shrink-0"
+                  className="h-12 w-12 rounded-xl border border-[#10B981]/40 shrink-0"
                 />
                 <div>
                   <h3
                     id="ios-install-heading"
-                    className="font-display text-base font-bold text-white"
+                    className="font-display text-base font-bold text-[#F3F4F6]"
                   >
                     Mete Wesley Music sou Ekran iPhone
                   </h3>
-                  <p className="text-xs text-emerald-400">Ouvri san ba Safari (Full Screen)</p>
+                  <p className="text-xs text-[#10B981]">Ouvri san ba Safari (Full Screen)</p>
                 </div>
               </div>
 
-              <ol className="space-y-2.5 text-sm text-zinc-300 leading-relaxed">
+              <ol className="space-y-2.5 text-sm text-[#D1D5DB] leading-relaxed">
                 <li className="flex items-start gap-2.5">
-                  <Share className="h-4 w-4 text-emerald-400 shrink-0 mt-1" />
+                  <Share className="h-4 w-4 text-[#10B981] shrink-0 mt-1" />
                   <span>
-                    1. Peze bouton <strong className="text-white">Share</strong> anba nan mitan
+                    1. Peze bouton <strong className="text-[#F3F4F6]">Share</strong> anba nan mitan
                     Safari a.
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">
-                  <PlusSquare className="h-4 w-4 text-emerald-400 shrink-0 mt-1" />
+                  <PlusSquare className="h-4 w-4 text-[#10B981] shrink-0 mt-1" />
                   <span>
-                    2. Desann epi peze <strong className="text-white">Add to Home Screen</strong>{' '}
+                    2. Desann epi peze <strong className="text-[#F3F4F6]">Add to Home Screen</strong>{' '}
                     (Ajoute sou ekran dakèy).
                   </span>
                 </li>
@@ -104,7 +104,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ variant = 'h
               <button
                 type="button"
                 onClick={() => setShowIOSGuide(false)}
-                className="w-full min-h-[44px] rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-display font-bold text-sm transition-colors cursor-pointer"
+                className="w-full min-h-[44px] rounded-xl bg-[#10B981] hover:bg-[#059669] text-[#0B1410] font-display font-bold text-sm transition-colors cursor-pointer"
               >
                 Oke, Mwen Konprann
               </button>

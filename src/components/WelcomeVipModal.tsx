@@ -89,17 +89,17 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#14161A]/80 backdrop-blur-sm p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="vip-welcome-heading"
     >
-      <div className="relative w-full max-w-lg rounded-2xl bg-[#13151B] border border-zinc-800 shadow-2xl p-6 sm:p-8 my-auto">
+      <div className="relative w-full max-w-lg rounded-2xl bg-[#262A30] border border-[#363B44] shadow-2xl p-6 sm:p-8 my-auto">
         <button
           type="button"
           onClick={onBrowsePacks}
           aria-label="Fèmen fenèt la"
-          className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-100 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-500"
+          className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-lg text-[#9CA3AF] hover:bg-[#363B44] hover:text-[#F3F4F6] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#10B981]"
         >
           <X className="h-5 w-5" />
         </button>
@@ -108,7 +108,7 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
           /* Unlocked inside popup: clean .ZIP download list */
           <div className="space-y-5">
             <div className="pr-8">
-              <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold mb-2 tabular-nums">
+              <div className="flex items-center gap-2 text-[#10B981] text-sm font-semibold mb-2 tabular-nums">
                 <CheckCircle2 className="h-5 w-5 shrink-0" />
                 <span>
                   {activeKey.totalFolders >= 999
@@ -118,17 +118,17 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
               </div>
               <h2
                 id="vip-welcome-heading"
-                className="font-display text-2xl font-bold text-white tracking-tight"
+                className="font-display text-2xl font-bold text-[#F3F4F6] tracking-tight"
               >
                 Chwazi Folder .ZIP pou w Telechaje
               </h2>
-              <p className="mt-1.5 text-sm text-zinc-400">
-                Kòd <span className="font-mono text-zinc-200">{activeKey.code}</span> aktif.
+              <p className="mt-1.5 text-sm text-[#9CA3AF]">
+                Kòd <span className="font-mono text-[#D1D5DB]">{activeKey.code}</span> aktif.
                 Klike sou nenpòt folder pou w telechaje .ZIP la (1 Kredi Folder).
               </p>
             </div>
 
-            <div className="max-h-72 overflow-y-auto divide-y divide-zinc-800/80 border border-zinc-800 rounded-xl bg-[#0E1015]">
+            <div className="max-h-72 overflow-y-auto divide-y divide-[#363B44] border border-[#363B44] rounded-xl bg-[#1C1F24]">
               {allPacks.map((pack) => {
                 const isComingSoon = Boolean(pack.isComingSoon);
                 const isTarget = pendingPack?.id === pack.id;
@@ -136,22 +136,22 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
                   <div
                     key={pack.id}
                     className={`flex items-center justify-between gap-3 p-3.5 ${
-                      isTarget && !isComingSoon ? 'bg-emerald-500/10' : ''
+                      isTarget && !isComingSoon ? 'bg-[#10B981]/10' : ''
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       {isComingSoon ? (
                         <Clock className="h-5 w-5 text-amber-400 shrink-0 animate-[spin_6s_linear_infinite]" />
                       ) : (
-                        <FolderArchive className="h-5 w-5 text-emerald-400 shrink-0" />
+                        <FolderArchive className="h-5 w-5 text-[#10B981] shrink-0" />
                       )}
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-zinc-100 leading-snug font-mono">
+                        <p className="text-sm font-semibold text-[#F3F4F6] leading-snug font-mono">
                           <ZipFilenameText filename={formatZipFolderFilename(pack)} />
                         </p>
                         <p
                           className={`text-xs mt-0.5 ${
-                            isComingSoon ? 'text-amber-300 font-medium' : 'text-zinc-400'
+                            isComingSoon ? 'text-amber-300 font-medium' : 'text-[#9CA3AF]'
                           }`}
                         >
                           {isComingSoon
@@ -162,14 +162,14 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
                     </div>
 
                     {isComingSoon ? (
-                      <span className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-zinc-900 border border-amber-500/35 px-2.5 py-2 text-[11px] font-bold text-amber-300 whitespace-nowrap">
+                      <span className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-[#262A30] border border-amber-500/35 px-2.5 py-2 text-[11px] font-bold text-amber-300 whitespace-nowrap">
                         ⏳ Poko Disponib
                       </span>
                     ) : (
                       <button
                         type="button"
                         onClick={() => onUnlockOrDownloadPack(pack)}
-                        className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-xs px-3 py-2 transition-colors cursor-pointer whitespace-nowrap"
+                        className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-[#10B981] hover:bg-[#059669] text-[#0B1410] font-semibold text-xs px-3 py-2 transition-colors cursor-pointer whitespace-nowrap"
                       >
                         <Download className="h-3.5 w-3.5" />
                         <span>⬇️ TELECHAJE .ZIP</span>
@@ -184,7 +184,7 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
               <button
                 type="button"
                 onClick={onBrowsePacks}
-                className="text-sm font-medium text-zinc-300 hover:text-white underline underline-offset-4 transition-colors cursor-pointer"
+                className="text-sm font-medium text-[#D1D5DB] hover:text-[#F3F4F6] underline underline-offset-4 transition-colors cursor-pointer"
               >
                 Wè tout folder .ZIP yo sou sit la
               </button>
@@ -194,16 +194,16 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
           /* Clean 2-Way VIP Access Modal: Top Prepaid/VIP Code + Bottom Automated Online Checkout */
           <div className="space-y-6">
             {/* TOP BOX: 🔑 OU GEN YON KLE VIP / KAT PREPEYE? */}
-            <div className="rounded-xl border border-zinc-800 bg-[#0E1015] p-4 sm:p-5">
+            <div className="rounded-xl border border-[#363B44] bg-[#202429] p-4 sm:p-5">
               <div className="pr-8">
                 <h2
                   id="vip-welcome-heading"
-                  className="font-display text-lg sm:text-xl font-bold text-white tracking-tight"
+                  className="font-display text-lg sm:text-xl font-bold text-[#F3F4F6] tracking-tight"
                 >
                   🔑 OU GEN YON KLE VIP / KAT PREPEYE?
                 </h2>
                 {pendingPack ? (
-                  <p className="mt-1.5 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  <p className="mt-1.5 text-xs sm:text-sm text-[#D1D5DB] leading-relaxed">
                     Antre kòd ou a pou w telechaje{' '}
                     <span className="font-semibold font-mono text-emerald-300">
                       {formatZipFolderFilename(pendingPack)}
@@ -211,7 +211,7 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
                     .
                   </p>
                 ) : (
-                  <p className="mt-1.5 text-xs sm:text-sm text-zinc-400 leading-relaxed">
+                  <p className="mt-1.5 text-xs sm:text-sm text-[#9CA3AF] leading-relaxed">
                     Antre Kle VIP oswa Kòd Kat Prepeye ou a anba a pou w debloke tout folder .ZIP yo touswit.
                   </p>
                 )}
@@ -233,7 +233,7 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
                     placeholder="Antre Kle VIP ou isit la... ex: W#84K2"
                     autoComplete="off"
                     spellCheck={false}
-                    className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 px-4 py-3 text-base font-mono text-white placeholder:font-sans placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 transition-colors"
+                    className="w-full rounded-xl bg-[#1C1F24] border border-[#363B44] px-4 py-3 text-base font-mono text-[#F3F4F6] placeholder:font-sans placeholder:text-[#9CA3AF] focus:border-[#10B981] focus:outline-none focus:ring-2 focus:ring-[#10B981]/25 transition-colors"
                   />
                 </div>
 
@@ -250,7 +250,7 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
                 <button
                   type="submit"
                   disabled={isValidatingKey}
-                  className="w-full min-h-[48px] rounded-xl bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 disabled:opacity-65 text-zinc-950 font-display font-extrabold text-sm sm:text-base tracking-tight px-5 py-3 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+                  className="w-full min-h-[48px] rounded-xl bg-[#10B981] hover:bg-[#059669] active:bg-emerald-700 disabled:opacity-65 text-[#0B1410] font-display font-extrabold text-sm sm:text-base tracking-tight px-5 py-3 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
                 >
                   {isValidatingKey
                     ? '⏳ Ap verifye Kle VIP la...'
@@ -261,22 +261,22 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
 
             {/* Divider */}
             <div className="relative flex items-center justify-center">
-              <div className="w-full border-t border-zinc-800" />
-              <span className="absolute bg-[#13151B] px-3 text-xs font-semibold tracking-wider text-zinc-400 whitespace-nowrap">
+              <div className="w-full border-t border-[#363B44]" />
+              <span className="absolute bg-[#262A30] px-3 text-xs font-semibold tracking-wider text-[#9CA3AF] whitespace-nowrap">
                 — OUBYEN —
               </span>
             </div>
 
             {/* BOTTOM BOX: 🛒 ACHTE KLE VIP OTOMATIK AN LIY */}
-            <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-b from-emerald-500/[0.06] to-[#0E1015] p-4 sm:p-5 space-y-4">
+            <div className="rounded-xl border border-[#10B981]/35 bg-[#202429] p-4 sm:p-5 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
                 <div>
-                  <h3 className="font-display text-base sm:text-lg font-bold text-white tracking-tight">
+                  <h3 className="font-display text-base sm:text-lg font-bold text-[#F3F4F6] tracking-tight">
                     🛒 ACHTE KLE VIP OTOMATIK AN LIY
                   </h3>
-                  <p className="mt-0.5 text-xs text-zinc-400">
+                  <p className="mt-0.5 text-xs text-[#9CA3AF]">
                     Pri pou {selectedCountry.flag}{' '}
-                    <span className="text-zinc-200 font-semibold">{selectedCountry.name}</span> (
+                    <span className="text-[#D1D5DB] font-semibold">{selectedCountry.name}</span> (
                     <span className="font-mono text-emerald-300">{currencyBadge}</span>)
                   </p>
                 </div>
@@ -311,17 +311,17 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
                       } ${
                         isUnlimited
                           ? isSelected
-                            ? 'bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/15 border-amber-300 text-white shadow-[0_0_24px_rgba(245,158,11,0.28)]'
-                            : 'bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-[#0B0C10] border-amber-400/55 text-zinc-100 hover:border-amber-300'
+                            ? 'bg-gradient-to-r from-amber-500/20 via-[#10B981]/20 to-amber-500/15 border-amber-300 text-[#F3F4F6] shadow-[0_0_24px_rgba(245,158,11,0.28)]'
+                            : 'bg-gradient-to-r from-amber-500/10 via-[#10B981]/10 to-[#262A30] border-amber-400/55 text-[#F3F4F6] hover:border-amber-300'
                           : isSelected
-                            ? 'bg-emerald-500/15 border-emerald-400 text-white shadow-[0_0_16px_rgba(16,185,129,0.16)]'
-                            : 'bg-[#0B0C10] border-zinc-800 text-zinc-300 hover:border-zinc-600'
+                            ? 'bg-[#10B981]/15 border-emerald-400 text-[#F3F4F6] shadow-[0_0_16px_rgba(16,185,129,0.16)]'
+                            : 'bg-[#1C1F24] border-[#363B44] text-[#D1D5DB] hover:border-[#10B981]/50'
                       }`}
                     >
                       <div className="flex flex-wrap items-center justify-between w-full gap-1.5">
                         <span
                           className={`font-display text-sm font-extrabold ${
-                            isUnlimited ? 'text-amber-300' : 'text-white'
+                            isUnlimited ? 'text-amber-300' : 'text-[#F3F4F6]'
                           }`}
                         >
                           {plan.shortLabel}
@@ -333,7 +333,7 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
                             </span>
                           )}
                           {plan.badge && (
-                            <span className="rounded bg-emerald-500/15 border border-emerald-400/40 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                            <span className="rounded bg-[#10B981]/15 border border-emerald-400/40 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
                               {plan.badge}
                             </span>
                           )}
@@ -346,7 +346,7 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
                       >
                         {planPrice}
                       </span>
-                      <span className="mt-0.5 text-[11px] font-mono text-zinc-300">
+                      <span className="mt-0.5 text-[11px] font-mono text-[#9CA3AF]">
                         {plan.subtitle}
                       </span>
                     </button>
@@ -358,7 +358,7 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
               <button
                 type="button"
                 onClick={() => onStartDirectCheckout(selectedPlan)}
-                className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400 hover:brightness-110 text-zinc-950 font-display font-extrabold text-xs sm:text-sm px-4 py-3.5 shadow-[0_0_24px_rgba(16,185,129,0.4)] transition-all text-center cursor-pointer"
+                className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#059669] via-[#10B981] to-[#059669] hover:brightness-110 text-[#0B1410] font-display font-extrabold text-xs sm:text-sm px-4 py-3.5 shadow-[0_0_24px_rgba(16,185,129,0.35)] transition-all text-center cursor-pointer"
               >
                 <Zap className="h-4 w-4 shrink-0" />
                 <span>
@@ -368,7 +368,7 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
                 </span>
               </button>
 
-              <p className="text-xs text-zinc-300 text-center leading-relaxed pt-0.5">
+              <p className="text-xs text-[#D1D5DB] text-center leading-relaxed pt-0.5">
                 {isHaiti
                   ? '🇭🇹 Ayiti: Peye dirèkteman ak Natcash (+509 56568810) epi resevwa Kle VIP ou touswit sou ekran an!'
                   : `🌐 Entènasyonal (${selectedCountry.flag}): Peye ak Kat Visa / Mastercard / Apple Pay oswa voye USDT (TRC20) pou w resevwa Kle VIP ou touswit!`}
@@ -379,7 +379,7 @@ export const WelcomeVipModal: React.FC<WelcomeVipModalProps> = ({
               <button
                 type="button"
                 onClick={onBrowsePacks}
-                className="inline-flex items-center justify-center min-h-[38px] px-3 py-1.5 text-sm font-medium text-zinc-400 hover:text-zinc-100 underline underline-offset-4 transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center min-h-[38px] px-3 py-1.5 text-sm font-medium text-[#9CA3AF] hover:text-[#F3F4F6] underline underline-offset-4 transition-colors cursor-pointer"
               >
                 👀 Gade Folder .ZIP yo Anvan
               </button>

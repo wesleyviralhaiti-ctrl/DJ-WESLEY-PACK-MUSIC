@@ -42,17 +42,17 @@ export const QuotaExhaustedModal: React.FC<QuotaExhaustedModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#14161A]/80 backdrop-blur-sm p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="quota-exhausted-heading"
     >
-      <div className="relative w-full max-w-lg rounded-2xl bg-[#13151B] border border-rose-500/40 shadow-2xl p-6 sm:p-8 my-auto text-center">
+      <div className="relative w-full max-w-lg rounded-2xl bg-[#262A30] border border-rose-500/40 shadow-2xl p-6 sm:p-8 my-auto text-center">
         <button
           type="button"
           onClick={onClose}
           aria-label="Fèmen fenèt la"
-          className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors cursor-pointer"
+          className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-lg text-[#9CA3AF] hover:bg-[#363B44] hover:text-[#F3F4F6] transition-colors cursor-pointer"
         >
           <X className="h-5 w-5" />
         </button>
@@ -60,7 +60,7 @@ export const QuotaExhaustedModal: React.FC<QuotaExhaustedModalProps> = ({
         <div className="pt-2 space-y-4">
           <h2
             id="quota-exhausted-heading"
-            className="font-display text-xl sm:text-2xl font-bold text-white tracking-tight"
+            className="font-display text-xl sm:text-2xl font-bold text-[#F3F4F6] tracking-tight"
           >
             ⏰ PLAN OU FINI!
           </h2>
@@ -71,15 +71,15 @@ export const QuotaExhaustedModal: React.FC<QuotaExhaustedModalProps> = ({
             </p>
           )}
 
-          <p className="text-sm sm:text-base text-zinc-300 leading-relaxed">
+          <p className="text-sm sm:text-base text-[#D1D5DB] leading-relaxed">
             Ou fin telechaje tout folder .ZIP ki te nan plan ou a. Chwazi yon nouvo plan anba a
             pou w resevwa yon lòt Kle VIP otomatikman oswa antre yon Kòd Prepeye!
           </p>
 
           <div className="flex items-center justify-between gap-2 pt-1 text-left">
-            <span className="text-xs text-zinc-400">
+            <span className="text-xs text-[#9CA3AF]">
               Pri pou {selectedCountry.flag}{' '}
-              <strong className="text-zinc-200">{selectedCountry.name}</strong> (
+              <strong className="text-[#D1D5DB]">{selectedCountry.name}</strong> (
               <span className="font-mono text-emerald-300">{currencyBadge}</span>)
             </span>
             <CountrySelector
@@ -108,17 +108,17 @@ export const QuotaExhaustedModal: React.FC<QuotaExhaustedModalProps> = ({
                   } ${
                     isUnlimited
                       ? isSelected
-                        ? 'bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/15 border-amber-300 text-white shadow-[0_0_20px_rgba(245,158,11,0.25)]'
-                        : 'bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-[#0B0C10] border-amber-400/55 text-zinc-100 hover:border-amber-300'
+                        ? 'bg-gradient-to-r from-amber-500/20 via-[#10B981]/20 to-amber-500/15 border-amber-300 text-[#F3F4F6] shadow-[0_0_20px_rgba(245,158,11,0.25)]'
+                        : 'bg-gradient-to-r from-amber-500/10 via-[#10B981]/10 to-[#1C1F24] border-amber-400/55 text-[#F3F4F6] hover:border-amber-300'
                       : isSelected
-                        ? 'bg-emerald-500/15 border-emerald-400 text-white'
-                        : 'bg-[#0B0C10] border-zinc-800 text-zinc-300 hover:border-zinc-600'
+                        ? 'bg-[#10B981]/15 border-emerald-400 text-[#F3F4F6]'
+                        : 'bg-[#1C1F24] border-[#363B44] text-[#D1D5DB] hover:border-[#10B981]/50'
                   }`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-1.5">
                     <span
                       className={`font-display text-xs sm:text-sm font-extrabold ${
-                        isUnlimited ? 'text-amber-300' : 'text-white'
+                        isUnlimited ? 'text-amber-300' : 'text-[#F3F4F6]'
                       }`}
                     >
                       {plan.shortLabel}
@@ -130,7 +130,7 @@ export const QuotaExhaustedModal: React.FC<QuotaExhaustedModalProps> = ({
                         </span>
                       )}
                       {plan.badge && (
-                        <span className="rounded bg-emerald-500/15 border border-emerald-400/40 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                        <span className="rounded bg-[#10B981]/15 border border-emerald-400/40 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
                           {plan.badge}
                         </span>
                       )}
@@ -143,7 +143,7 @@ export const QuotaExhaustedModal: React.FC<QuotaExhaustedModalProps> = ({
                   >
                     {planPrice}
                   </div>
-                  <div className="text-[11px] font-mono text-zinc-300 mt-0.5">
+                  <div className="text-[11px] font-mono text-[#9CA3AF] mt-0.5">
                     {plan.subtitle}
                   </div>
                 </button>
@@ -155,7 +155,7 @@ export const QuotaExhaustedModal: React.FC<QuotaExhaustedModalProps> = ({
             <button
               type="button"
               onClick={() => onStartDirectCheckout(selectedPlan)}
-              className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400 hover:brightness-110 text-zinc-950 font-display font-extrabold text-xs sm:text-sm px-4 py-3.5 shadow-[0_0_24px_rgba(16,185,129,0.4)] transition-all cursor-pointer"
+              className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#059669] via-[#10B981] to-[#059669] hover:brightness-110 text-[#0B1410] font-display font-extrabold text-xs sm:text-sm px-4 py-3.5 shadow-[0_0_24px_rgba(16,185,129,0.35)] transition-all cursor-pointer"
             >
               <Zap className="h-4 w-4 shrink-0" />
               <span>
@@ -168,13 +168,13 @@ export const QuotaExhaustedModal: React.FC<QuotaExhaustedModalProps> = ({
             <button
               type="button"
               onClick={onEnterNewKey}
-              className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl border border-zinc-700 hover:border-zinc-500 text-zinc-200 text-sm font-semibold px-4 py-2.5 transition-colors cursor-pointer"
+              className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[#363B44] bg-[#1C1F24] hover:border-[#10B981]/60 text-[#F3F4F6] text-sm font-semibold px-4 py-2.5 transition-colors cursor-pointer"
             >
-              <KeyRound className="h-4 w-4 text-emerald-400" />
+              <KeyRound className="h-4 w-4 text-[#10B981]" />
               <span>🔑 Antre yon Nouvo Kle VIP / Kat Prepeye</span>
             </button>
 
-            <p className="text-xs text-zinc-400 leading-relaxed pt-1">
+            <p className="text-xs text-[#9CA3AF] leading-relaxed pt-1">
               {isHaiti
                 ? '🇭🇹 Ayiti: Peye dirèkteman ak Natcash (+509 56568810) epi resevwa Kle VIP ou touswit sou ekran an!'
                 : `🌐 Entènasyonal (${selectedCountry.flag}): Peye an liy ak USDT (TRC20) pou w resevwa Kle VIP ou touswit sou ekran an!`}

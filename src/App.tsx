@@ -12,14 +12,15 @@ import {
   Bell,
   CheckCircle2,
   Flame,
+  Trash2,
 } from 'lucide-react';
 import {
   ACTIVE_KEY_STORAGE_KEY,
-  HERO_IMAGE,
   FolderPlan,
   MusicPack,
   VipKeyRecord,
   consumeFolderCreditRemote,
+  deleteRemoteMusicPack,
   fetchVipKeyByCodeRemote,
   formatZipFolderFilename,
   getAllMusicPacks,
@@ -526,14 +527,14 @@ export default function App() {
   const isUnlockedForDownload = Boolean((isAdminAuthenticated && isAdminFreeMode) || hasRemainingCredits);
 
   return (
-    <div className="min-h-[100dvh] pb-[env(safe-area-inset-bottom)] bg-[#0B0C10] text-zinc-100 flex flex-col">
+    <div className="min-h-[100dvh] pb-[env(safe-area-inset-bottom)] bg-[#1C1F24] text-[#F3F4F6] flex flex-col">
       {/* Top Bar Contract: 3 clean zones separated by gap-8 */}
-      <header className="sticky top-0 z-30 pt-[env(safe-area-inset-top)] border-b border-zinc-800/80 bg-[#0B0C10]/90 backdrop-blur-md">
+      <header className="sticky top-0 z-30 pt-[env(safe-area-inset-top)] border-b border-[#363B44] bg-[#262A30]/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 sm:gap-6 px-3 sm:px-6 h-16">
           {/* Zone 1: Brand wordmark */}
           <a
             href="#top"
-            className="font-display text-sm sm:text-lg font-bold tracking-tight text-white whitespace-nowrap truncate min-w-0"
+            className="font-display text-sm sm:text-lg font-bold tracking-tight text-[#F3F4F6] whitespace-nowrap truncate min-w-0"
           >
             WESLEY MUSIC PACKS
           </a>
@@ -541,24 +542,24 @@ export default function App() {
           {/* Zone 2: Clean single-line nav links */}
           <nav
             aria-label="Navigasyon prensipal"
-            className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-400"
+            className="hidden md:flex items-center gap-6 text-sm font-medium text-[#D1D5DB]"
           >
             <a
               href="#pake-mizik"
-              className="hover:text-white transition-colors whitespace-nowrap shrink-0"
+              className="hover:text-[#F3F4F6] transition-colors whitespace-nowrap shrink-0"
             >
               Folder .ZIP yo
             </a>
             <a
               href="#koman-sa-mache"
-              className="hover:text-white transition-colors whitespace-nowrap shrink-0"
+              className="hover:text-[#F3F4F6] transition-colors whitespace-nowrap shrink-0"
             >
               Kòman sa Mache
             </a>
             <button
               type="button"
               onClick={() => setIsAdminOpen(true)}
-              className="hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="hover:text-[#F3F4F6] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               Admin VIP
             </button>
@@ -585,7 +586,7 @@ export default function App() {
                 }}
                 className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-lg border text-xs font-semibold whitespace-nowrap shrink-0 tabular-nums transition-colors cursor-pointer ${
                   hasRemainingCredits
-                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25'
+                    ? 'bg-[#10B981]/15 border-[#10B981]/40 text-emerald-300 hover:bg-[#10B981]/25'
                     : 'bg-rose-500/15 border-rose-500/40 text-rose-300 hover:bg-rose-500/25'
                 }`}
               >
@@ -609,7 +610,7 @@ export default function App() {
                   setPendingPack(null);
                   setIsWelcomeOpen(true);
                 }}
-                className="inline-flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-lg bg-[#10B981] hover:bg-[#059669] text-[#0B1410] text-xs font-bold whitespace-nowrap shrink-0 transition-colors cursor-pointer"
               >
                 <KeyRound className="h-3.5 w-3.5 shrink-0" />
                 <span className="hidden sm:inline">Antre Kle VIP</span>
@@ -625,7 +626,7 @@ export default function App() {
         <div
           className={`border-b ${
             isAdminFreeMode
-              ? 'border-emerald-500/40 bg-emerald-500/15'
+              ? 'border-[#10B981]/40 bg-[#10B981]/15'
               : 'border-amber-500/35 bg-amber-500/10'
           }`}
         >
@@ -635,8 +636,8 @@ export default function App() {
               onClick={() => setIsAdminFreeMode((v) => !v)}
               className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold tracking-tight transition-colors cursor-pointer ${
                 isAdminFreeMode
-                  ? 'bg-emerald-500 text-zinc-950 hover:bg-emerald-400'
-                  : 'bg-zinc-900 border border-amber-500/50 text-amber-200 hover:bg-zinc-800'
+                  ? 'bg-[#10B981] text-[#0B1410] hover:bg-[#059669]'
+                  : 'bg-[#262A30] border border-amber-500/50 text-amber-200 hover:bg-[#2E333B]'
               }`}
             >
               <span>
@@ -650,14 +651,14 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setIsAdminOpen(true)}
-                className="font-semibold text-emerald-300 hover:text-white underline underline-offset-4 cursor-pointer"
+                className="font-semibold text-emerald-300 hover:text-[#F3F4F6] underline underline-offset-4 cursor-pointer"
               >
                 Ouvri Admin Panel
               </button>
               <button
                 type="button"
                 onClick={handleAdminLogout}
-                className="font-medium text-zinc-300 hover:text-rose-300 cursor-pointer"
+                className="font-medium text-[#D1D5DB] hover:text-rose-300 cursor-pointer"
               >
                 Dekonekte
               </button>
@@ -671,8 +672,8 @@ export default function App() {
         <div
           className={`border-b ${
             hasRemainingCredits
-              ? 'border-emerald-500/25 bg-emerald-500/10'
-              : 'border-rose-500/25 bg-rose-500/10'
+              ? 'border-[#10B981]/30 bg-[#10B981]/10'
+              : 'border-rose-500/30 bg-rose-500/10'
           }`}
         >
           <div className="mx-auto flex flex-wrap items-center justify-between gap-3 max-w-6xl px-4 sm:px-6 py-2.5 text-xs sm:text-sm">
@@ -694,7 +695,7 @@ export default function App() {
             <button
               type="button"
               onClick={handleLockSession}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-200 hover:text-white underline underline-offset-4 cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#D1D5DB] hover:text-[#F3F4F6] underline underline-offset-4 cursor-pointer"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span>Chanje Kle VIP</span>
@@ -704,99 +705,86 @@ export default function App() {
       )}
 
       <main id="top" className="flex-1">
-        {/* Hero Section */}
-        <section className="border-b border-zinc-800/80">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 sm:py-16">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
-              <div className="lg:col-span-7 flex flex-col justify-center">
-                <p className="text-xs font-medium text-emerald-400 tracking-wide mb-3">
+        {/* Hero Section (Clean Text Header without large banner image) */}
+        <section className="border-b border-[#363B44]">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="max-w-3xl">
+                <p className="text-xs font-medium text-[#10B981] tracking-wide mb-2">
                   Koleksyon DJ &amp; Fanatik 2026 · Pake .ZIP VirtualDJ Ready
                 </p>
-                <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight leading-[1.12] [text-wrap:balance]">
+                <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-[#F3F4F6] tracking-tight leading-[1.12]">
                   Folder Mizik VIP .ZIP pou DJ ak Amatè Bon Mizik
                 </h1>
-                <p className="mt-4 text-base text-zinc-300 leading-relaxed max-w-2xl">
-                  Chak folder <span className="font-mono text-zinc-200">.ZIP</span> genyen mizik an
-                  lòd ak koulè VirtualDJ + 2 Hot Cues pare. Antre Kle VIP ou a pou w telechaje
-                  folder ou yo dirèkteman.
+                <p className="mt-2 text-sm sm:text-base text-[#D1D5DB] leading-relaxed">
+                  Chak folder <span className="font-mono text-[#F3F4F6]">.ZIP</span> genyen mizik an
+                  lòd pare pou telechaje. Antre Kle VIP ou a pou w jwenn tout folder ou yo.
                 </p>
-
-                <div className="mt-8 flex flex-wrap items-center gap-3.5">
-                  {hasRemainingCredits ? (
-                    <>
-                      <a
-                        href="#pake-mizik"
-                        className="inline-flex items-center justify-center gap-2 min-h-[46px] px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-display font-bold text-sm whitespace-nowrap transition-colors"
-                      >
-                        <Unlock className="h-4 w-4" />
-                        <span>Telechaje Folder .ZIP yo Kounye a</span>
-                      </a>
-                      <button
-                        type="button"
-                        onClick={handleLockSession}
-                        className="inline-flex items-center justify-center gap-2 min-h-[46px] px-4 py-3 rounded-xl border border-zinc-700 hover:border-zinc-500 text-zinc-200 text-sm font-medium whitespace-nowrap transition-colors cursor-pointer"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        <span>Chanje Kòd ({activeKey?.code})</span>
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPendingPack(null);
-                          setIsWelcomeOpen(true);
-                        }}
-                        className="inline-flex items-center justify-center gap-2 min-h-[46px] px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-display font-bold text-sm whitespace-nowrap transition-colors cursor-pointer"
-                      >
-                        <KeyRound className="h-4 w-4" />
-                        <span>Debloke ak Kle VIP</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPendingPack(null);
-                          setIsWelcomeOpen(true);
-                        }}
-                        className="inline-flex items-center justify-center gap-2 min-h-[46px] px-5 py-3 rounded-xl border border-zinc-700 hover:border-emerald-500/60 text-zinc-100 text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer"
-                      >
-                        <Zap className="h-4 w-4 text-emerald-400" />
-                        <span>Achte Kle VIP Otomatik</span>
-                      </button>
-                    </>
-                  )}
-                  <PWAInstallButton variant="hero" />
-                </div>
               </div>
 
-              <div className="lg:col-span-5">
-                <div className="relative h-64 sm:h-80 lg:h-full min-h-[260px] rounded-2xl overflow-hidden border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 flex items-center justify-center">
-                  <img
-                    src={HERO_IMAGE}
-                    alt="Estidyo DJ ak tab miksaj Wesley Music Packs"
-                    referrerPolicy="no-referrer"
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0B0C10]/70 via-transparent to-transparent" />
-                </div>
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
+                {hasRemainingCredits ? (
+                  <>
+                    <a
+                      href="#pake-mizik"
+                      className="inline-flex items-center justify-center gap-2 min-h-[42px] px-4 py-2.5 rounded-xl bg-[#10B981] hover:bg-[#059669] text-[#0B1410] font-display font-bold text-xs sm:text-sm whitespace-nowrap transition-colors"
+                    >
+                      <Unlock className="h-4 w-4" />
+                      <span>Telechaje .ZIP yo</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleLockSession}
+                      className="inline-flex items-center justify-center gap-2 min-h-[42px] px-3.5 py-2.5 rounded-xl bg-[#262A30] border border-[#363B44] hover:border-[#10B981]/50 text-[#F3F4F6] text-xs sm:text-sm font-medium whitespace-nowrap transition-colors cursor-pointer"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Chanje Kòd</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPendingPack(null);
+                        setIsWelcomeOpen(true);
+                      }}
+                      className="inline-flex items-center justify-center gap-2 min-h-[42px] px-4 py-2.5 rounded-xl bg-[#10B981] hover:bg-[#059669] text-[#0B1410] font-display font-bold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer"
+                    >
+                      <KeyRound className="h-4 w-4" />
+                      <span>Debloke ak Kle VIP</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPendingPack(null);
+                        setIsWelcomeOpen(true);
+                      }}
+                      className="inline-flex items-center justify-center gap-2 min-h-[42px] px-4 py-2.5 rounded-xl bg-[#262A30] border border-[#363B44] hover:border-[#10B981]/60 text-[#F3F4F6] text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer"
+                    >
+                      <Zap className="h-4 w-4 text-[#10B981]" />
+                      <span>Achte Kle VIP</span>
+                    </button>
+                  </>
+                )}
+                <PWAInstallButton variant="hero" />
               </div>
             </div>
           </div>
         </section>
 
-        {/* Clean .ZIP Folder Cards Grid (Zero tracklists, all packs in one single clean grid) */}
-        <section id="pake-mizik" className="py-14 sm:py-16 border-b border-zinc-800/80">
+        {/* Clean .ZIP Folder Compact Aligned Rows */}
+        <section id="pake-mizik" className="py-12 sm:py-16 border-b border-[#363B44]">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
               <div>
-                <h2 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight tabular-nums">
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#F3F4F6] tracking-tight tabular-nums">
                   Tout Folder Mizik .ZIP yo ({activePacksCount} Disponib · {comingSoonPacksCount} An
                   Preparasyon)
                 </h2>
-                <p className="mt-2 text-sm text-zinc-400">
-                  Chak pake se yon folder <span className="font-mono text-zinc-300">.ZIP</span>{' '}
-                  konplè ki gen tout mizik yo nimewote an lòd ak koulè VirtualDJ + 2 Hot Cues.
+                <p className="mt-2 text-sm text-[#9CA3AF]">
+                  Chak pake se yon folder <span className="font-mono text-[#D1D5DB]">.ZIP</span>{' '}
+                  konplè ki gen tout mizik yo nimewote an lòd pare pou telechaje.
                 </p>
               </div>
             </div>
@@ -804,21 +792,21 @@ export default function App() {
             {/* 1. REAL OWNER DOWNLOADABLE .ZIP FOLDERS AT THE TOP */}
             <div className="mb-12">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-                <div className="inline-flex items-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/40 px-3.5 py-1.5 text-xs font-extrabold text-emerald-300">
+                <div className="inline-flex items-center gap-2 rounded-xl bg-[#10B981]/15 border border-[#10B981]/40 px-3.5 py-1.5 text-xs font-extrabold text-emerald-300">
                   <CheckCircle2 className="h-4 w-4 shrink-0" />
                   <span>✅ DISPONIB KOUNYE A ({activePacksCount} Folder .ZIP Pare)</span>
                 </div>
               </div>
 
               {availablePacks.length === 0 ? (
-                <div className="rounded-2xl border border-zinc-800 bg-[#13151B] p-8 text-center space-y-2">
-                  <FolderArchive className="h-9 w-9 text-zinc-600 mx-auto" />
-                  <p className="text-sm font-semibold text-zinc-200">
+                <div className="rounded-2xl border border-[#363B44] bg-[#262A30] p-8 text-center space-y-2">
+                  <FolderArchive className="h-9 w-9 text-[#9CA3AF] mx-auto" />
+                  <p className="text-sm font-semibold text-[#F3F4F6]">
                     Pa gen okenn folder .ZIP pare pou telechaje pou moman an.
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="space-y-3">
                   {availablePacks.map((pack) => {
                     const isPackaging = packagingPackId === pack.id;
                     const zipFilename = formatZipFolderFilename(pack);
@@ -827,49 +815,46 @@ export default function App() {
                     return (
                       <article
                         key={pack.id}
-                        className={`group flex flex-col justify-between rounded-2xl border p-6 transition-all duration-200 hover:-translate-y-0.5 ${
+                        className={`group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-xl border transition-all duration-200 ${
                           isUnlockedForDownload
-                            ? 'bg-[#13151B] border-emerald-500/45 shadow-[0_0_24px_rgba(16,185,129,0.08)]'
-                            : 'bg-[#13151B] border-zinc-800 hover:border-zinc-700'
+                            ? 'bg-[#262A30] border-[#10B981]/45 shadow-[0_0_20px_rgba(16,185,129,0.06)]'
+                            : 'bg-[#262A30] border-[#363B44] hover:border-[#4B525E]'
                         }`}
                       >
-                        <div>
-                          <div className="flex items-start justify-between gap-3">
-                            <div
-                              className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border ${
-                                isUnlockedForDownload
-                                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
-                                  : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                              }`}
-                            >
-                              <FolderArchive className="h-7 w-7" />
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div
+                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${
+                              isUnlockedForDownload
+                                ? 'bg-[#10B981]/15 border-[#10B981]/40 text-[#10B981]'
+                                : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                            }`}
+                          >
+                            <FolderArchive className="h-5 w-5" />
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#10B981]/15 text-emerald-300 font-mono text-[11px] font-bold">
+                                {pack.trackCount} Mizik
+                              </span>
+                              <span className="text-xs text-[#9CA3AF] font-medium">
+                                {pack.genre}
+                              </span>
                             </div>
 
-                            <span className="text-xs font-semibold text-right text-emerald-400">
-                              {pack.genre}
-                            </span>
+                            <h3 className="mt-1 font-mono text-sm sm:text-base font-bold text-[#F3F4F6] tracking-tight truncate">
+                              <ZipFilenameText filename={zipFilename} />
+                            </h3>
                           </div>
-
-                          <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/35 px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-emerald-300">
-                            <span>✅ DISPONIB KOUNYE A</span>
-                          </div>
-
-                          <h3 className="mt-3 font-mono text-[15px] sm:text-lg leading-snug font-bold text-white tracking-tight">
-                            <ZipFilenameText filename={zipFilename} />
-                          </h3>
-
-                          <p className="mt-2 text-xs sm:text-sm font-medium text-zinc-400 tabular-nums">
-                            {pack.trackCount} Mizik an Lòd • .ZIP
-                          </p>
                         </div>
 
-                        <div className="mt-6 pt-5 border-t border-zinc-800/80">
+                        <div className="flex items-center gap-2.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#363B44]">
                           {isUnlockedForDownload ? (
                             <button
                               type="button"
                               disabled={isPackaging}
                               onClick={() => void handleUnlockOrDownloadPack(pack)}
-                              className="w-full inline-flex items-center justify-center gap-2 min-h-[46px] px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-zinc-950 text-sm font-extrabold whitespace-nowrap transition-colors cursor-pointer"
+                              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#10B981] hover:bg-[#059669] disabled:opacity-60 text-[#0B1410] text-xs sm:text-sm font-extrabold whitespace-nowrap transition-colors cursor-pointer"
                             >
                               <Download className="h-4 w-4 shrink-0" />
                               <span>
@@ -888,10 +873,27 @@ export default function App() {
                                   setIsWelcomeOpen(true);
                                 }
                               }}
-                              className="w-full inline-flex items-center justify-center gap-2 min-h-[46px] px-4 py-2.5 rounded-xl bg-[#0B0C10] border border-zinc-700 hover:border-emerald-500 disabled:opacity-60 text-white text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
+                              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1C1F24] border border-[#363B44] hover:border-[#10B981] disabled:opacity-60 text-[#F3F4F6] text-xs sm:text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
                             >
-                              <Lock className="h-4 w-4 text-emerald-400 shrink-0" />
+                              <Lock className="h-4 w-4 text-[#10B981] shrink-0" />
                               <span>🔒 Mete Kle VIP pou Telechaje</span>
+                            </button>
+                          )}
+
+                          {isAdminAuthenticated && (
+                            <button
+                              type="button"
+                              title="Efase Pake sa a (Admin)"
+                              onClick={async () => {
+                                if (window.confirm(`Èske ou vle efase folder "${zipFilename}" nèt?`)) {
+                                  await deleteRemoteMusicPack(pack.id);
+                                  setCustomPacksVersion((v) => v + 1);
+                                  showToast(`🗑️ Pake "${zipFilename}" efase.`);
+                                }
+                              }}
+                              className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-300 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           )}
                         </div>
@@ -903,7 +905,7 @@ export default function App() {
             </div>
 
             {/* 2. COUNTRY-AWARE TRENDING CATALOG ("🔥 TANDANS NAN PEYI W") */}
-            <div className="pt-8 border-t border-zinc-800/80">
+            <div className="pt-8 border-t border-[#363B44]">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-7">
                 <div>
                   <div className="inline-flex items-center gap-2 rounded-xl bg-amber-500/15 border border-amber-400/40 px-3.5 py-1.5 text-xs font-extrabold text-amber-300 mb-3">
@@ -912,12 +914,12 @@ export default function App() {
                       🔥 TANDANS NAN PEYI W · {selectedCountry.flag} {selectedCountry.name}
                     </span>
                   </div>
-                  <h3 className="font-display text-xl sm:text-2xl font-bold text-white tracking-tight">
+                  <h3 className="font-display text-xl sm:text-2xl font-bold text-[#F3F4F6] tracking-tight">
                     🔥 TANDANS NAN PEYI W ({comingSoonPacksCount} Pake .ZIP An Preparasyon)
                   </h3>
-                  <p className="mt-1.5 text-xs sm:text-sm text-zinc-400 max-w-2xl">
+                  <p className="mt-1.5 text-xs sm:text-sm text-[#9CA3AF] max-w-2xl">
                     Pake ki pi cho yo pou{' '}
-                    <span className="text-zinc-200 font-semibold">
+                    <span className="text-[#D1D5DB] font-semibold">
                       {selectedCountry.flag} {selectedCountry.name}
                     </span>
                     . Klike sou « 🔔 Mande Pake Sa a » pou w di DJ Wesley kilès pou l lage pi vit
@@ -926,7 +928,7 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="space-y-3">
                 {trendingComingSoonPacks.map((pack) => {
                   const zipFilename = formatZipFolderFilename(pack);
                   const alreadyRequested = requestedZips.includes(zipFilename);
@@ -935,41 +937,38 @@ export default function App() {
                   return (
                     <article
                       key={pack.id}
-                      className="group flex flex-col justify-between rounded-2xl border p-6 transition-all duration-200 hover:-translate-y-0.5 bg-gradient-to-b from-amber-500/[0.06] to-[#13151B] border-amber-500/40 hover:border-amber-400/70 shadow-[0_0_24px_rgba(245,158,11,0.06)]"
+                      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-xl border bg-[#262A30] border-amber-500/40 hover:border-amber-400/60 transition-all duration-200"
                     >
-                      <div>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border bg-amber-500/15 border-amber-400/45 text-amber-300">
-                            <Clock className="h-7 w-7 animate-[spin_6s_linear_infinite]" />
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border bg-amber-500/15 border-amber-400/45 text-amber-300">
+                          <Clock className="h-5 w-5 animate-[spin_6s_linear_infinite]" />
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 font-mono text-[11px] font-bold">
+                              AN ATANT / BYENTO
+                            </span>
+                            <span className="text-xs text-[#9CA3AF] font-medium">
+                              {pack.genre} • {selectedCountry.flag} {selectedCountry.name}
+                            </span>
                           </div>
 
-                          <span className="text-xs font-semibold text-right text-amber-300">
-                            {pack.genre}
-                          </span>
+                          <h3 className="mt-1 font-mono text-sm sm:text-base font-bold text-[#F3F4F6] tracking-tight truncate">
+                            <ZipFilenameText filename={zipFilename} />
+                          </h3>
                         </div>
-
-                        <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 text-[11px] font-bold tracking-wide text-amber-300">
-                          <span>⏳ AN PREPARASYON (AP VINI BYENTO)</span>
-                        </div>
-
-                        <h3 className="mt-4 font-mono text-[15px] sm:text-lg leading-snug font-bold text-white tracking-tight">
-                          <ZipFilenameText filename={zipFilename} />
-                        </h3>
-
-                        <p className="mt-2 text-xs sm:text-sm font-medium text-zinc-400">
-                          Tandans {selectedCountry.flag} {selectedCountry.name} • Ap vini byento
-                        </p>
                       </div>
 
-                      <div className="mt-6 pt-5 border-t border-zinc-800/80">
+                      <div className="flex items-center gap-2.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#363B44]">
                         <button
                           type="button"
                           disabled={isSending}
                           onClick={() => void handleRequestComingSoonPack(pack)}
-                          className={`w-full inline-flex items-center justify-center gap-2 min-h-[46px] px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-extrabold whitespace-nowrap transition-colors cursor-pointer ${
+                          className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-extrabold whitespace-nowrap transition-colors cursor-pointer ${
                             alreadyRequested
-                              ? 'bg-emerald-500/15 border-emerald-500/45 text-emerald-300 hover:bg-emerald-500/25'
-                              : 'bg-amber-500/15 border-amber-400/60 hover:bg-amber-400 hover:text-zinc-950 text-amber-200'
+                              ? 'bg-[#10B981]/15 border-[#10B981]/45 text-emerald-300 hover:bg-[#10B981]/25'
+                              : 'bg-amber-500/15 border-amber-400/60 hover:bg-amber-400 hover:text-[#1C1F24] text-amber-200'
                           }`}
                         >
                           {alreadyRequested ? (
@@ -996,39 +995,39 @@ export default function App() {
         {/* How It Works */}
         <section id="koman-sa-mache" className="py-14 sm:py-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <h2 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight mb-8">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#F3F4F6] tracking-tight mb-8">
               Kòman sa Mache nan 3 Etap
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="rounded-2xl bg-[#13151B] border border-zinc-800 p-6">
-                <p className="font-mono text-xs text-emerald-400 font-semibold">01. Achte Otomatik</p>
-                <h3 className="mt-2 font-display text-lg font-bold text-white">
+              <div className="rounded-2xl bg-[#262A30] border border-[#363B44] p-6">
+                <p className="font-mono text-xs text-[#10B981] font-semibold">01. Achte Otomatik</p>
+                <h3 className="mt-2 font-display text-lg font-bold text-[#F3F4F6]">
                   Peye An Liy oswa Sèvi ak Kat Prepeye
                 </h3>
-                <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
+                <p className="mt-2 text-sm text-[#D1D5DB] leading-relaxed">
                   Chwazi plan ou bezwen an (10, 21, 36, 55 Folder oswa VIP Ilimite) epi peye ak Kat
                   Vityèl, Kat Bankè oswa Crypto USDT pou w resevwa Kle VIP ou a otomatikman.
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-[#13151B] border border-zinc-800 p-6">
-                <p className="font-mono text-xs text-emerald-400 font-semibold">02. Debloke</p>
-                <h3 className="mt-2 font-display text-lg font-bold text-white">
+              <div className="rounded-2xl bg-[#262A30] border border-[#363B44] p-6">
+                <p className="font-mono text-xs text-[#10B981] font-semibold">02. Debloke</p>
+                <h3 className="mt-2 font-display text-lg font-bold text-[#F3F4F6]">
                   Antre Kle VIP ou a
                 </h3>
-                <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
+                <p className="mt-2 text-sm text-[#D1D5DB] leading-relaxed">
                   Antre kòd kout ou a (egzanp <span className="font-mono">W#84K2</span>) pou w
                   debloke bouton vèt « ⬇️ TELECHAJE .ZIP » yo sou tout folder yo.
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-[#13151B] border border-zinc-800 p-6">
-                <p className="font-mono text-xs text-emerald-400 font-semibold">03. Telechaje .ZIP</p>
-                <h3 className="mt-2 font-display text-lg font-bold text-white">
+              <div className="rounded-2xl bg-[#262A30] border border-[#363B44] p-6">
+                <p className="font-mono text-xs text-[#10B981] font-semibold">03. Telechaje .ZIP</p>
+                <h3 className="mt-2 font-display text-lg font-bold text-[#F3F4F6]">
                   Pare pou VirtualDJ 8 / 2024+
                 </h3>
-                <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
+                <p className="mt-2 text-sm text-[#D1D5DB] leading-relaxed">
                   Chak folder .ZIP vini ak MP3 nimewote an lòd,{' '}
                   <span className="font-mono">000 - PLAYLIST_VIRTUALDJ.m3u</span>, ak{' '}
                   <span className="font-mono">VIRTUALDJ_IMPORT_DATABASE.xml</span>.
@@ -1040,9 +1039,9 @@ export default function App() {
       </main>
 
       {/* Clean Footer */}
-      <footer className="border-t border-zinc-800/80 bg-[#090A0D]">
-        <div className="mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-6xl px-4 sm:px-6 py-8 text-xs text-zinc-400">
-          <p>© {new Date().getFullYear()} WESLEY MUSIC PACKS. Tout dwa rezève.</p>
+      <footer className="border-t border-[#363B44] bg-[#202429]">
+        <div className="mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-6xl px-4 sm:px-6 py-8 text-xs text-[#9CA3AF]">
+          <p>© {new Date().getFullYear()} WESLEY MUSIC PACKS (by DJ WESLEY). Tout dwa rezève.</p>
           <div className="flex flex-wrap items-center gap-6">
             <button
               type="button"
@@ -1050,14 +1049,14 @@ export default function App() {
                 setPendingPack(null);
                 setIsWelcomeOpen(true);
               }}
-              className="hover:text-zinc-200 transition-colors cursor-pointer"
+              className="hover:text-[#F3F4F6] transition-colors cursor-pointer"
             >
               Antre Kle VIP
             </button>
             <button
               type="button"
               onClick={() => setIsAdminOpen(true)}
-              className="hover:text-zinc-200 transition-colors cursor-pointer"
+              className="hover:text-[#F3F4F6] transition-colors cursor-pointer"
             >
               Admin Panel
             </button>
@@ -1147,37 +1146,37 @@ export default function App() {
       {/* Floating Download Progress Panel */}
       {downloadProgress && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4 animate-in fade-in slide-in-from-bottom-6 duration-300">
-          <div className="rounded-2xl bg-[#13151B]/95 border border-emerald-500/50 p-5 shadow-[0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+          <div className="rounded-2xl bg-[#262A30]/95 border border-[#10B981]/50 p-5 shadow-[0_10px_40px_rgba(0,0,0,0.6)] backdrop-blur-xl">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-3 w-3 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#10B981]"></span>
                 </span>
-                <span className="font-display font-bold text-sm text-white tracking-tight">
+                <span className="font-display font-bold text-sm text-[#F3F4F6] tracking-tight">
                   {downloadProgress.status === 'completed'
                     ? '✅ TELECHAJE KONPLÈ!'
                     : '📥 TELECHAJMAN AN KOU...'}
                 </span>
               </div>
-              <span className="font-mono text-xs font-bold text-emerald-400 tabular-nums">
+              <span className="font-mono text-xs font-bold text-[#10B981] tabular-nums">
                 {downloadProgress.percent}%
               </span>
             </div>
 
-            <p className="font-mono text-xs text-zinc-300 truncate mb-3">
+            <p className="font-mono text-xs text-[#D1D5DB] truncate mb-3">
               {downloadProgress.trackName}
             </p>
 
             {/* Animated Progress Bar */}
-            <div className="w-full h-3 bg-zinc-800 rounded-full overflow-hidden p-0.5 border border-zinc-700/60 mb-3">
+            <div className="w-full h-3 bg-[#1C1F24] rounded-full overflow-hidden p-0.5 border border-[#363B44] mb-3">
               <div
-                className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(16,185,129,0.5)]"
+                className="h-full bg-gradient-to-r from-[#059669] to-[#10B981] rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(16,185,129,0.5)]"
                 style={{ width: `${Math.max(5, downloadProgress.percent)}%` }}
               />
             </div>
 
-            <div className="flex items-center justify-between text-xs text-zinc-400">
+            <div className="flex items-center justify-between text-xs text-[#9CA3AF]">
               <span>
                 {downloadProgress.status === 'completed'
                   ? 'Fichye .ZIP la anrejistre nan Downloads ou.'
@@ -1204,9 +1203,9 @@ export default function App() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-xl bg-[#13151B] border border-emerald-500/40 px-4 py-3 text-sm font-medium text-emerald-200 shadow-xl max-w-sm"
+          className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-xl bg-[#262A30] border border-[#10B981]/45 px-4 py-3 text-sm font-medium text-emerald-200 shadow-xl max-w-sm"
         >
-          <FolderCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+          <FolderCheck className="h-4 w-4 text-[#10B981] shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}

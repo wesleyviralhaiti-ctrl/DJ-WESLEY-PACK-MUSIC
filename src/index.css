@@ -10,7 +10,8 @@
   html {
     font-family: var(--font-sans);
     scroll-behavior: smooth;
-    background-color: #090A0D;
+    background-color: #1C1F24;
+    color: #F3F4F6;
     min-height: 100dvh;
   }
 

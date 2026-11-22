@@ -957,19 +957,19 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#14161A]/80 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="admin-panel-heading"
     >
-      <div className="relative w-full max-w-5xl rounded-2xl bg-[#13151B] border border-zinc-800 shadow-2xl overflow-hidden my-auto">
+      <div className="relative w-full max-w-5xl rounded-2xl bg-[#262A30] border border-[#363B44] shadow-2xl overflow-hidden my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-zinc-800 bg-[#0F1117]">
+        <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-[#363B44] bg-[#202429]">
           <div className="flex items-center gap-2.5 min-w-0">
-            <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+            <ShieldCheck className="h-5 w-5 text-[#10B981] shrink-0" />
             <h2
               id="admin-panel-heading"
-              className="font-display text-base sm:text-lg font-bold text-white tracking-tight truncate"
+              className="font-display text-base sm:text-lg font-bold text-[#F3F4F6] tracking-tight truncate"
             >
               WESLEY MUSIC PACKS — Admin Panel
             </h2>
@@ -980,7 +980,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               <button
                 type="button"
                 onClick={onAdminLogout}
-                className="px-3 py-1.5 rounded-lg border border-zinc-700 hover:border-rose-500/60 text-xs font-medium text-zinc-300 hover:text-rose-300 transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-lg border border-[#363B44] bg-[#262A30] hover:border-rose-500/60 text-xs font-medium text-[#D1D5DB] hover:text-rose-300 transition-colors cursor-pointer"
               >
                 Dekonekte Admin
               </button>
@@ -989,7 +989,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Fèmen Admin Panel la"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors cursor-pointer"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-[#9CA3AF] hover:bg-[#363B44] hover:text-[#F3F4F6] transition-colors cursor-pointer"
             >
               <X className="h-5 w-5" />
             </button>
@@ -999,11 +999,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         {!isAuthenticated ? (
           <form onSubmit={handleLogin} className="p-6 sm:p-8 max-w-md mx-auto space-y-4">
             <div className="text-center space-y-1.5">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-emerald-400 mb-3">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#1C1F24] border border-[#363B44] text-[#10B981] mb-3">
                 <Lock className="h-5 w-5" />
               </div>
-              <h3 className="font-display text-xl font-bold text-white">Aksè Admin Pwoteje</h3>
-              <p className="text-sm text-zinc-400">
+              <h3 className="font-display text-xl font-bold text-[#F3F4F6]">Aksè Admin Pwoteje</h3>
+              <p className="text-sm text-[#9CA3AF]">
                 Antre PIN Admin nan pou w debloke telechajman gratis ilimite, jere pake yo,
                 epi kreye Kòd VIP.
               </p>
@@ -1023,13 +1023,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 }}
                 placeholder="Antre PIN Admin nan..."
                 autoFocus
-                className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 pl-4 pr-11 py-3 text-sm text-white placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none"
+                className="w-full rounded-xl bg-[#1C1F24] border border-[#363B44] pl-4 pr-11 py-3 text-sm text-[#F3F4F6] placeholder:text-[#9CA3AF] focus:border-[#10B981] focus:outline-none"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? 'Kache modpas' : 'Montre modpas'}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#F3F4F6] cursor-pointer"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -1043,7 +1043,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
             <button
               type="submit"
-              className="w-full min-h-[46px] rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-display font-bold text-sm transition-colors cursor-pointer"
+              className="w-full min-h-[46px] rounded-xl bg-[#10B981] hover:bg-[#059669] text-[#0B1410] font-display font-bold text-sm transition-colors cursor-pointer"
             >
               Ouvri Admin Panel la
             </button>
@@ -1051,14 +1051,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         ) : (
           <div className="flex flex-col max-h-[86vh]">
             {/* Admin Section Switcher Tabs */}
-            <div className="flex flex-wrap items-center gap-2 px-6 py-3 border-b border-zinc-800 bg-[#0E1015]">
+            <div className="flex flex-wrap items-center gap-2 px-6 py-3 border-b border-[#363B44] bg-[#202429]">
               <button
                 type="button"
                 onClick={() => setActiveTab('packs')}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                   activeTab === 'packs'
-                    ? 'bg-emerald-500 text-zinc-950'
-                    : 'bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-800'
+                    ? 'bg-[#10B981] text-[#0B1410]'
+                    : 'bg-[#262A30] text-[#D1D5DB] hover:text-[#F3F4F6] border border-[#363B44]'
                 }`}
               >
                 <FolderOpen className="h-4 w-4 shrink-0" />
@@ -1069,8 +1069,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 onClick={() => setActiveTab('keys')}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                   activeTab === 'keys'
-                    ? 'bg-emerald-500 text-zinc-950'
-                    : 'bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-800'
+                    ? 'bg-[#10B981] text-[#0B1410]'
+                    : 'bg-[#262A30] text-[#D1D5DB] hover:text-[#F3F4F6] border border-[#363B44]'
                 }`}
               >
                 <KeyRound className="h-4 w-4 shrink-0" />
@@ -1084,8 +1084,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 }}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                   activeTab === 'orders'
-                    ? 'bg-emerald-500 text-zinc-950'
-                    : 'bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-800'
+                    ? 'bg-[#10B981] text-[#0B1410]'
+                    : 'bg-[#262A30] text-[#D1D5DB] hover:text-[#F3F4F6] border border-[#363B44]'
                 }`}
               >
                 <CreditCard className="h-4 w-4 shrink-0" />
@@ -1094,8 +1094,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   <span
                     className={`rounded-full px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums ${
                       activeTab === 'orders'
-                        ? 'bg-zinc-950 text-emerald-300'
-                        : 'bg-amber-400 text-zinc-950'
+                        ? 'bg-[#1C1F24] text-emerald-300'
+                        : 'bg-amber-400 text-[#1C1F24]'
                     }`}
                   >
                     {pendingOrdersCount}
@@ -1112,8 +1112,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 }}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                   activeTab === 'visitors'
-                    ? 'bg-emerald-500 text-zinc-950'
-                    : 'bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-800'
+                    ? 'bg-[#10B981] text-[#0B1410]'
+                    : 'bg-[#262A30] text-[#D1D5DB] hover:text-[#F3F4F6] border border-[#363B44]'
                 }`}
               >
                 <Users className="h-4 w-4 shrink-0" />
@@ -1121,8 +1121,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 <span
                   className={`rounded-full px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums ${
                     activeTab === 'visitors'
-                      ? 'bg-zinc-950 text-emerald-300'
-                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35'
+                      ? 'bg-[#1C1F24] text-emerald-300'
+                      : 'bg-[#10B981]/20 text-emerald-300 border border-[#10B981]/35'
                   }`}
                 >
                   🟢 {onlineVisitorsCount}
@@ -1139,8 +1139,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 }}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                   activeTab === 'requests'
-                    ? 'bg-emerald-500 text-zinc-950'
-                    : 'bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-800'
+                    ? 'bg-[#10B981] text-[#0B1410]'
+                    : 'bg-[#262A30] text-[#D1D5DB] hover:text-[#F3F4F6] border border-[#363B44]'
                 }`}
               >
                 <Bell className="h-4 w-4 shrink-0" />
@@ -1149,8 +1149,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   <span
                     className={`rounded-full px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums ${
                       activeTab === 'requests'
-                        ? 'bg-zinc-950 text-emerald-300'
-                        : 'bg-amber-400 text-zinc-950'
+                        ? 'bg-[#1C1F24] text-emerald-300'
+                        : 'bg-amber-400 text-[#1C1F24]'
                     }`}
                   >
                     {packRequests.length}
@@ -1162,17 +1162,17 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
             <div className="p-6 space-y-6 overflow-y-auto">
               {/* TOP OF ADMIN PANEL: + Kreye Nouvo Folder (Upload Real Folder OR Coming Soon Placeholder) */}
               {activeTab !== 'orders' && activeTab !== 'visitors' && activeTab !== 'requests' && (
-              <div className="rounded-2xl border border-zinc-800 bg-[#0E1015] p-5 sm:p-6 space-y-5">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800/80 pb-4">
+              <div className="rounded-2xl border border-[#363B44] bg-[#202429] p-5 sm:p-6 space-y-5">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#363B44] pb-4">
                   <div className="flex items-center gap-2.5">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-emerald-400">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#10B981]/15 border border-[#10B981]/35 text-[#10B981]">
                       <Plus className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="font-display text-base sm:text-lg font-bold text-white">
+                      <h3 className="font-display text-base sm:text-lg font-bold text-[#F3F4F6]">
                         + Kreye Nouvo Folder
                       </h3>
-                      <p className="text-xs text-zinc-400">
+                      <p className="text-xs text-[#9CA3AF]">
                         Voye yon folder mizik konplè kounye a, oswa prepare yon folder « An
                         Preparasyon » pou w plen sit la.
                       </p>
@@ -1192,15 +1192,15 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                       createAsComingSoon
                         ? 'bg-amber-500/20 border-amber-400 text-amber-200 shadow-[0_0_20px_rgba(245,158,11,0.18)]'
-                        : 'bg-[#0B0C10] border-zinc-700 hover:border-amber-400/60 text-zinc-200'
+                        : 'bg-[#1C1F24] border-[#363B44] hover:border-amber-400/60 text-[#D1D5DB]'
                     }`}
                   >
                     <span
                       className={`flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors ${
-                        createAsComingSoon ? 'bg-amber-400 justify-end' : 'bg-zinc-700 justify-start'
+                        createAsComingSoon ? 'bg-amber-400 justify-end' : 'bg-[#363B44] justify-start'
                       }`}
                     >
-                      <span className="h-4 w-4 rounded-full bg-zinc-950 shadow-sm" />
+                      <span className="h-4 w-4 rounded-full bg-[#F3F4F6] shadow-sm" />
                     </span>
                     <span className="text-left">
                       ⏳ Kreye kòm Folder &apos;An Preparasyon&apos; (San Mizik Pou Kounye a)
@@ -1212,7 +1212,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   /* Coming Soon Placeholder Form — Name & Genre ONLY, zero MP3 upload needed */
                   <form
                     onSubmit={handleCreateComingSoonFolder}
-                    className="rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-[#0B0C10] to-zinc-950 p-5 space-y-4"
+                    className="rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-[#262A30] to-[#1C1F24] p-5 space-y-4"
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 border border-amber-400/45 text-amber-300">
@@ -1222,7 +1222,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         <h4 className="font-display text-sm sm:text-base font-bold text-amber-300">
                           ⏳ Nouvo Folder &apos;An Preparasyon&apos; (San Mizik Pou Kounye a)
                         </h4>
-                        <p className="text-xs text-zinc-300 mt-0.5">
+                        <p className="text-xs text-[#D1D5DB] mt-0.5">
                           Tape non folder la ak estil li sèlman — pa gen okenn fichye MP3 ki
                           obligatwa! Kliyan VIP yo ap wè l sou sit la san yo pa ka depanse kredi
                           sou li jiskaske ou mete mizik yo ladan l.
@@ -1234,7 +1234,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       <div className="md:col-span-6">
                         <label
                           htmlFor="coming-soon-folder-name"
-                          className="block text-xs font-semibold text-zinc-200 mb-1.5"
+                          className="block text-xs font-semibold text-[#D1D5DB] mb-1.5"
                         >
                           Non Folder la (.ZIP)
                         </label>
@@ -1247,7 +1247,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                             if (comingSoonError) setComingSoonError(null);
                           }}
                           placeholder="Ex: Rabòday_Kanaval_2027_VIP.zip oswa Konpa_Gouyad_Vol_18.zip"
-                          className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 px-3.5 py-2.5 text-sm font-mono text-white placeholder:font-sans placeholder:text-zinc-500 focus:border-amber-400 focus:outline-none"
+                          className="w-full rounded-xl bg-[#1C1F24] border border-[#363B44] px-3.5 py-2.5 text-sm font-mono text-[#F3F4F6] placeholder:font-sans placeholder:text-[#9CA3AF] focus:border-amber-400 focus:outline-none"
                         />
                         {comingSoonName.trim() && (
                           <p className="mt-1.5 text-[11px] font-mono text-amber-300">
@@ -1272,7 +1272,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       <div className="md:col-span-6">
                         <label
                           htmlFor="coming-soon-folder-genre"
-                          className="block text-xs font-semibold text-zinc-200 mb-1.5"
+                          className="block text-xs font-semibold text-[#D1D5DB] mb-1.5"
                         >
                           Estil Mizik (Genre)
                         </label>
@@ -1282,7 +1282,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           value={comingSoonGenre}
                           onChange={(e) => setComingSoonGenre(e.target.value)}
                           placeholder="Ex: Rabòday / Kanaval"
-                          className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-amber-400 focus:outline-none"
+                          className="w-full rounded-xl bg-[#1C1F24] border border-[#363B44] px-3.5 py-2.5 text-sm text-[#F3F4F6] placeholder:text-[#9CA3AF] focus:border-amber-400 focus:outline-none"
                         />
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {COMING_SOON_GENRE_PRESETS.map((preset) => (
@@ -1293,7 +1293,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               className={`px-2 py-1 rounded-md text-[11px] font-medium border transition-colors cursor-pointer ${
                                 comingSoonGenre === preset
                                   ? 'bg-amber-500/20 border-amber-400 text-amber-200'
-                                  : 'bg-[#13151B] border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                                  : 'bg-[#262A30] border-[#363B44] text-[#9CA3AF] hover:text-[#F3F4F6]'
                               }`}
                             >
                               {preset}
@@ -1312,7 +1312,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     <div className="flex justify-end pt-1">
                       <button
                         type="submit"
-                        className="inline-flex items-center justify-center gap-2 min-h-[46px] px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-display font-extrabold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer"
+                        className="inline-flex items-center justify-center gap-2 min-h-[46px] px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#1C1F24] font-display font-extrabold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer"
                       >
                         <Hourglass className="h-4 w-4 shrink-0" />
                         <span>⏳ Kreye Folder &apos;An Preparasyon&apos;</span>
@@ -1341,25 +1341,25 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     onDrop={(e) => void handleFolderDrop(e)}
                     className={`rounded-2xl border-2 border-dashed p-5 sm:p-6 transition-all ${
                       isDraggingFolder
-                        ? 'border-emerald-400 bg-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.2)]'
-                        : 'border-amber-400/70 bg-gradient-to-br from-emerald-500/10 via-[#0B0C10] to-amber-500/10 hover:border-emerald-400/90'
+                        ? 'border-emerald-400 bg-[#10B981]/20 shadow-[0_0_30px_rgba(16,185,129,0.2)]'
+                        : 'border-amber-400/70 bg-gradient-to-br from-[#10B981]/10 via-[#262A30] to-amber-500/10 hover:border-emerald-400/90'
                     }`}
                   >
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                       <div className="flex items-start gap-4">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/25 to-amber-500/25 border border-amber-400/40 text-amber-300">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#10B981]/25 to-amber-500/25 border border-amber-400/40 text-amber-300">
                           <FolderUp className="h-7 w-7" />
                         </div>
                         <div>
                           <h4 className="font-display text-base sm:text-lg font-extrabold text-amber-300 tracking-tight">
                             📂 CHWAZI OSWA GLISE TOUT YON FOLDER MIZIK ISIT LA
                           </h4>
-                          <p className="text-xs sm:text-sm text-zinc-200 mt-1 leading-relaxed">
+                          <p className="text-xs sm:text-sm text-[#D1D5DB] mt-1 leading-relaxed">
                             Chwazi tout yon folder mizik sou òdinatè Windows/Mac ou an 1 klik, oswa
                             glise l dirèkteman anndan bwat sa a. Sistèm nan ap mete non folder la,
                             nimewote tout mizik yo an lòd (
-                            <span className="font-mono text-emerald-300">001 - ...</span>), aplike
-                            koulè VirtualDJ yo, epi detekte 2 Hot Cues otomatikman!
+                            <span className="font-mono text-emerald-300">001 - ...</span>), epi
+                            mete yo pare pou telechaje nan .ZIP!
                           </p>
                         </div>
                       </div>
@@ -1380,7 +1380,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         />
                         <label
                           htmlFor="admin-full-folder-input"
-                          className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 min-h-[48px] px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-amber-400 hover:from-emerald-400 hover:to-amber-300 text-zinc-950 font-display font-extrabold text-xs sm:text-sm whitespace-nowrap shadow-lg cursor-pointer transition-all ${
+                          className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 min-h-[48px] px-5 py-3 rounded-xl bg-gradient-to-r from-[#10B981] to-amber-400 hover:brightness-110 text-[#0B1410] font-display font-extrabold text-xs sm:text-sm whitespace-nowrap shadow-lg cursor-pointer transition-all ${
                             isProcessingFolder ? 'opacity-60 pointer-events-none' : ''
                           }`}
                         >
@@ -1404,8 +1404,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 )}
 
                 {folderProgressText && (
-                  <div className="rounded-xl bg-[#0B0C10]/90 border border-emerald-500/35 px-4 py-2.5 text-xs font-medium text-emerald-300 flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                  <div className="rounded-xl bg-[#1C1F24] border border-[#10B981]/35 px-4 py-2.5 text-xs font-medium text-emerald-300 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-[#10B981]" />
                     <span>{folderProgressText}</span>
                   </div>
                 )}
@@ -1421,7 +1421,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                 {/* Auto-filled Pack Name + Ready Test Download Card */}
                 {importedPack && !importedPack.isComingSoon && (
-                  <div className="rounded-xl bg-[#0B0C10] border border-emerald-500/45 p-4 space-y-4">
+                  <div className="rounded-xl bg-[#1C1F24] border border-[#10B981]/45 p-4 space-y-4">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
                       <div className="lg:col-span-6">
                         <label
@@ -1435,9 +1435,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           type="text"
                           value={importedPackNameInput}
                           onChange={(e) => handleRenameImportedPack(e.target.value)}
-                          className="w-full rounded-xl bg-[#13151B] border border-zinc-700 px-3.5 py-2.5 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none"
+                          className="w-full rounded-xl bg-[#262A30] border border-[#363B44] px-3.5 py-2.5 text-sm font-bold text-[#F3F4F6] focus:border-[#10B981] focus:outline-none"
                         />
-                        <p className="text-[11px] font-mono text-emerald-400 mt-1.5">
+                        <p className="text-[11px] font-mono text-[#10B981] mt-1.5">
                           📦 {formatZipFolderFilename(importedPack)} · {importedPack.trackCount}{' '}
                           Mizik an Lòd • .ZIP
                         </p>
@@ -1448,7 +1448,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           type="button"
                           disabled={packagingPackId === importedPack.id}
                           onClick={() => void onAdminFreeDownloadPack(importedPack)}
-                          className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-zinc-950 font-display font-extrabold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer"
+                          className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl bg-[#10B981] hover:bg-[#059669] disabled:opacity-60 text-[#0B1410] font-display font-extrabold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer"
                         >
                           <Download className="h-4 w-4 shrink-0" />
                           <span>
@@ -1477,13 +1477,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               {activeTab === 'orders' ? (
                 /* 💳 Kòmand & Peman Kliyan — Live Natcash Haiti & USDT TRC20 Order Queue */
                 <div className="space-y-5">
-                  <div className="rounded-xl bg-[#0E1015] border border-emerald-500/30 p-5 space-y-4">
+                  <div className="rounded-xl bg-[#202429] border border-[#10B981]/30 p-5 space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
-                        <h3 className="font-display text-base sm:text-lg font-bold text-white">
+                        <h3 className="font-display text-base sm:text-lg font-bold text-[#F3F4F6]">
                           💳 Kòmand &amp; Peman Kliyan (Natcash Ayiti &amp; USDT TRC20)
                         </h3>
-                        <p className="text-xs text-zinc-400 mt-1">
+                        <p className="text-xs text-[#9CA3AF] mt-1">
                           Verifye kòd tranzaksyon Natcash (+509 56568810) oswa TxID USDT TRC20 yo,
                           epi klike « ✔ Valide &amp; Voye Kle VIP » pou debloke ekran kliyan an
                           touswit.
@@ -1507,8 +1507,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                             onClick={() => setOrderFilter(tab.id)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
                               orderFilter === tab.id
-                                ? 'bg-emerald-500 text-zinc-950 border-emerald-400'
-                                : 'bg-[#0B0C10] text-zinc-300 border-zinc-800 hover:border-zinc-600'
+                                ? 'bg-[#10B981] text-[#0B1410] border-emerald-400'
+                                : 'bg-[#1C1F24] text-[#D1D5DB] border-[#363B44] hover:border-[#10B981]/50'
                             }`}
                           >
                             {tab.label}
@@ -1519,14 +1519,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                     <form
                       onSubmit={(e) => void handleSaveNatcashSmsReceipt(e)}
-                      className="rounded-xl bg-[#0B0C10] border border-zinc-800 p-4 space-y-3"
+                      className="rounded-xl bg-[#1C1F24] border border-[#363B44] p-4 space-y-3"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
                           <h4 className="text-xs font-bold text-emerald-300">
                             📩 Anrejistre Resi SMS Natcash (+509 56568810) pou Auto-Deblokaj
                           </h4>
-                          <p className="text-[11px] text-zinc-400">
+                          <p className="text-[11px] text-[#9CA3AF]">
                             Lè w antre yon Kòd ID Natcash + Montan HTG isit la, kliyan an ap kapab
                             debloke Kle VIP li otomatikman san w pa bezwen prezan.
                           </p>
@@ -1537,7 +1537,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         <div className="sm:col-span-5">
                           <label
                             htmlFor="admin-sms-tx-id"
-                            className="block text-[11px] font-medium text-zinc-300 mb-1"
+                            className="block text-[11px] font-medium text-[#D1D5DB] mb-1"
                           >
                             Kòd Tranzaksyon (ID) SMS Natcash
                           </label>
@@ -1550,14 +1550,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               if (smsReceiptError) setSmsReceiptError(null);
                             }}
                             placeholder="Ex: 9482710583 oswa NC94827105"
-                            className="w-full rounded-lg bg-[#13151B] border border-zinc-700 px-3 py-2 text-xs font-mono text-white placeholder:font-sans placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none"
+                            className="w-full rounded-lg bg-[#262A30] border border-[#363B44] px-3 py-2 text-xs font-mono text-[#F3F4F6] placeholder:font-sans placeholder:text-[#9CA3AF] focus:border-[#10B981] focus:outline-none"
                           />
                         </div>
 
                         <div className="sm:col-span-3">
                           <label
                             htmlFor="admin-sms-htg-amount"
-                            className="block text-[11px] font-medium text-zinc-300 mb-1"
+                            className="block text-[11px] font-medium text-[#D1D5DB] mb-1"
                           >
                             Montan HTG Resevwa
                           </label>
@@ -1565,7 +1565,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                             id="admin-sms-htg-amount"
                             value={smsReceiptAmount}
                             onChange={(e) => setSmsReceiptAmount(e.target.value)}
-                            className="w-full rounded-lg bg-[#13151B] border border-zinc-700 px-3 py-2 text-xs font-mono text-white focus:border-emerald-500 focus:outline-none"
+                            className="w-full rounded-lg bg-[#262A30] border border-[#363B44] px-3 py-2 text-xs font-mono text-[#F3F4F6] focus:border-[#10B981] focus:outline-none"
                           >
                             <option value="500">500 HTG (10 Folder)</option>
                             <option value="1000">1,000 HTG (21 Folder)</option>
@@ -1579,7 +1579,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           <button
                             type="submit"
                             disabled={isSavingSmsReceipt || !smsReceiptTxId.trim()}
-                            className="w-full min-h-[36px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-55 px-3 py-2 text-xs font-extrabold text-zinc-950 transition-colors cursor-pointer"
+                            className="w-full min-h-[36px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#10B981] hover:bg-[#059669] disabled:opacity-55 px-3 py-2 text-xs font-extrabold text-[#0B1410] transition-colors cursor-pointer"
                           >
                             <Save className="h-3.5 w-3.5 shrink-0" />
                             <span>
@@ -1593,7 +1593,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         <p className="text-xs text-rose-300">{smsReceiptError}</p>
                       )}
 
-                      <div className="pt-2 border-t border-zinc-800/80">
+                      <div className="pt-2 border-t border-[#363B44]">
                         <button
                           type="button"
                           onClick={() => setShowSmsWebhookGuide((v) => !v)}
@@ -1607,10 +1607,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         </button>
 
                         {showSmsWebhookGuide && (
-                          <div className="mt-3 rounded-lg bg-[#13151B] border border-zinc-700/80 p-3.5 space-y-2.5 text-[11px] text-zinc-300">
+                          <div className="mt-3 rounded-lg bg-[#262A30] border border-[#363B44] p-3.5 space-y-2.5 text-[11px] text-[#D1D5DB]">
                             <p className="leading-relaxed">
                               Enstale yon app{' '}
-                              <strong className="text-white">SMS Forwarder / MacroDroid</strong> sou
+                              <strong className="text-[#F3F4F6]">SMS Forwarder / MacroDroid</strong> sou
                               telefòn ki resevwa SMS Natcash (+509 56568810) yo epi voye yon{' '}
                               <span className="font-mono text-emerald-300">POST</span> otomatik sou
                               endpoint Supabase sa a pou kwaze-verifye tout SMS Natcash an tan reyèl:
@@ -1618,7 +1618,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between gap-2">
-                                <span className="font-semibold text-zinc-400">
+                                <span className="font-semibold text-[#9CA3AF]">
                                   POST Endpoint URL (Raw SMS Parser RPC):
                                 </span>
                                 <button
@@ -1629,19 +1629,19 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                       `${SUPABASE_URL}/rest/v1/rpc/ingest_natcash_sms_webhook`
                                     )
                                   }
-                                  className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-bold text-emerald-300 cursor-pointer"
+                                  className="px-2 py-0.5 rounded bg-[#363B44] hover:bg-[#4B525E] text-[10px] font-bold text-emerald-300 cursor-pointer"
                                 >
                                   {copiedOrderId === 'webhook-url' ? '✔ Kopye!' : 'Kopye URL'}
                                 </button>
                               </div>
-                              <div className="rounded bg-[#0B0C10] border border-zinc-800 px-2.5 py-1.5 font-mono text-[10px] text-emerald-200 break-all select-all">
+                              <div className="rounded bg-[#1C1F24] border border-[#363B44] px-2.5 py-1.5 font-mono text-[10px] text-emerald-200 break-all select-all">
                                 {SUPABASE_URL}/rest/v1/rpc/ingest_natcash_sms_webhook
                               </div>
                             </div>
 
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between gap-2">
-                                <span className="font-semibold text-zinc-400">
+                                <span className="font-semibold text-[#9CA3AF]">
                                   HTTP Headers:
                                 </span>
                                 <button
@@ -1652,19 +1652,19 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                       `apikey: ${SUPABASE_ANON_KEY}\nAuthorization: Bearer ${SUPABASE_ANON_KEY}\nContent-Type: application/json`
                                     )
                                   }
-                                  className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-bold text-emerald-300 cursor-pointer"
+                                  className="px-2 py-0.5 rounded bg-[#363B44] hover:bg-[#4B525E] text-[10px] font-bold text-emerald-300 cursor-pointer"
                                 >
                                   {copiedOrderId === 'webhook-headers'
                                     ? '✔ Kopye!'
                                     : 'Kopye Headers'}
                                 </button>
                               </div>
-                              <pre className="rounded bg-[#0B0C10] border border-zinc-800 px-2.5 py-1.5 font-mono text-[10px] text-zinc-200 overflow-x-auto select-all">{`apikey: ${SUPABASE_ANON_KEY}\nAuthorization: Bearer ${SUPABASE_ANON_KEY}\nContent-Type: application/json`}</pre>
+                              <pre className="rounded bg-[#1C1F24] border border-[#363B44] px-2.5 py-1.5 font-mono text-[10px] text-[#D1D5DB] overflow-x-auto select-all">{`apikey: ${SUPABASE_ANON_KEY}\nAuthorization: Bearer ${SUPABASE_ANON_KEY}\nContent-Type: application/json`}</pre>
                             </div>
 
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between gap-2">
-                                <span className="font-semibold text-zinc-400">
+                                <span className="font-semibold text-[#9CA3AF]">
                                   JSON Body Template:
                                 </span>
                                 <button
@@ -1682,12 +1682,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                       )
                                     )
                                   }
-                                  className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-bold text-emerald-300 cursor-pointer"
+                                  className="px-2 py-0.5 rounded bg-[#363B44] hover:bg-[#4B525E] text-[10px] font-bold text-emerald-300 cursor-pointer"
                                 >
                                   {copiedOrderId === 'webhook-body' ? '✔ Kopye!' : 'Kopye JSON'}
                                 </button>
                               </div>
-                              <pre className="rounded bg-[#0B0C10] border border-zinc-800 px-2.5 py-1.5 font-mono text-[10px] text-amber-200 overflow-x-auto select-all">{`{\n  "p_raw_sms": "%sms_body%",\n  "p_sender_phone": "%from%"\n}`}</pre>
+                              <pre className="rounded bg-[#1C1F24] border border-[#363B44] px-2.5 py-1.5 font-mono text-[10px] text-amber-200 overflow-x-auto select-all">{`{\n  "p_raw_sms": "%sms_body%",\n  "p_sender_phone": "%from%"\n}`}</pre>
                             </div>
                           </div>
                         )}
@@ -1697,22 +1697,22 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     {orderActionBanner && (
                       <div
                         role="status"
-                        className="rounded-xl bg-emerald-500/15 border border-emerald-500/40 px-4 py-3 text-xs font-semibold text-emerald-200 flex items-center gap-2"
+                        className="rounded-xl bg-[#10B981]/15 border border-[#10B981]/40 px-4 py-3 text-xs font-semibold text-emerald-200 flex items-center gap-2"
                       >
-                        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-[#10B981]" />
                         <span>{orderActionBanner}</span>
                       </div>
                     )}
 
                     {filteredOrders.length === 0 ? (
-                      <div className="rounded-xl border border-zinc-800 bg-[#0B0C10] p-8 text-center space-y-2">
-                        <CreditCard className="h-9 w-9 text-zinc-600 mx-auto" />
-                        <p className="text-sm font-semibold text-zinc-200">
+                      <div className="rounded-xl border border-[#363B44] bg-[#1C1F24] p-8 text-center space-y-2">
+                        <CreditCard className="h-9 w-9 text-[#9CA3AF] mx-auto" />
+                        <p className="text-sm font-semibold text-[#F3F4F6]">
                           {orderFilter === 'pending'
                             ? 'Pa gen okenn peman k ap tann verifikasyon kounye a.'
                             : 'Pa gen okenn kòmand kliyan anrejistre ankò.'}
                         </p>
-                        <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                        <p className="text-xs text-[#9CA3AF] max-w-md mx-auto">
                           Lè yon kliyan voye yon peman Natcash oswa USDT TRC20 sou sit la, kòmand li
                           ap parèt isit la otomatikman pou w kapab valide l nan 1 klik.
                         </p>
@@ -1732,10 +1732,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               key={order.id}
                               className={`rounded-xl border p-4 transition-colors ${
                                 isPending
-                                  ? 'bg-amber-500/[0.05] border-amber-500/45'
+                                  ? 'bg-amber-500/[0.06] border-amber-500/45'
                                   : isApproved
-                                    ? 'bg-emerald-500/[0.04] border-emerald-500/35'
-                                    : 'bg-rose-500/[0.04] border-rose-500/35'
+                                    ? 'bg-[#10B981]/[0.06] border-[#10B981]/35'
+                                    : 'bg-rose-500/[0.06] border-rose-500/35'
                               }`}
                             >
                               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -1745,7 +1745,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                       className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-extrabold ${
                                         isNatcash
                                           ? 'bg-rose-500/20 text-rose-200 border border-rose-500/40'
-                                          : 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/40'
+                                          : 'bg-[#10B981]/20 text-emerald-200 border border-[#10B981]/40'
                                       }`}
                                     >
                                       {isNatcash ? (
@@ -1763,7 +1763,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                         isPending
                                           ? 'bg-amber-400/20 text-amber-200 border border-amber-400/40'
                                           : isApproved
-                                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                            ? 'bg-[#10B981]/20 text-emerald-300 border border-[#10B981]/40'
                                             : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
                                       }`}
                                     >
@@ -1783,20 +1783,20 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                       {isRejected && <span>❌ Refize</span>}
                                     </span>
 
-                                    <span className="font-mono text-[11px] text-zinc-400">
+                                    <span className="font-mono text-[11px] text-[#9CA3AF]">
                                       {order.id}
                                     </span>
-                                    <span className="text-[11px] text-zinc-500">
+                                    <span className="text-[11px] text-[#9CA3AF]">
                                       · {new Date(order.createdAt).toLocaleString()}
                                     </span>
                                   </div>
 
                                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                                    <div className="rounded-lg bg-[#0B0C10] border border-zinc-800 px-3 py-2">
-                                      <span className="text-zinc-500 block text-[10px]">
+                                    <div className="rounded-lg bg-[#1C1F24] border border-[#363B44] px-3 py-2">
+                                      <span className="text-[#9CA3AF] block text-[10px]">
                                         Plan &amp; Montan
                                       </span>
-                                      <span className="font-bold text-white">
+                                      <span className="font-bold text-[#F3F4F6]">
                                         {order.planTitle}
                                       </span>
                                       <span className="block font-mono text-emerald-300 font-bold mt-0.5">
@@ -1804,22 +1804,22 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                       </span>
                                     </div>
 
-                                    <div className="rounded-lg bg-[#0B0C10] border border-zinc-800 px-3 py-2">
-                                      <span className="text-zinc-500 block text-[10px]">
+                                    <div className="rounded-lg bg-[#1C1F24] border border-[#363B44] px-3 py-2">
+                                      <span className="text-[#9CA3AF] block text-[10px]">
                                         Peyi / Telefòn Kliyan
                                       </span>
-                                      <span className="font-semibold text-zinc-200">
+                                      <span className="font-semibold text-[#D1D5DB]">
                                         {order.countryName} ({order.countryCode})
                                       </span>
                                       {order.buyerPhone && (
-                                        <span className="block font-mono text-zinc-300 mt-0.5">
+                                        <span className="block font-mono text-[#D1D5DB] mt-0.5">
                                           📞 {order.buyerPhone}
                                         </span>
                                       )}
                                     </div>
 
-                                    <div className="rounded-lg bg-[#0B0C10] border border-zinc-800 px-3 py-2">
-                                      <span className="text-zinc-500 block text-[10px]">
+                                    <div className="rounded-lg bg-[#1C1F24] border border-[#363B44] px-3 py-2">
+                                      <span className="text-[#9CA3AF] block text-[10px]">
                                         {isNatcash
                                           ? 'Kòd Tranzaksyon (ID) Natcash'
                                           : 'Transaction ID / Hash (TxID)'}
@@ -1838,10 +1838,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                               )
                                             }
                                             title="Kopye TxID"
-                                            className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 cursor-pointer"
+                                            className="p-1 rounded bg-[#262A30] hover:bg-[#363B44] text-[#D1D5DB] cursor-pointer"
                                           >
                                             {copiedOrderId === `tx-${order.id}` ? (
-                                              <Check className="h-3 w-3 text-emerald-400" />
+                                              <Check className="h-3 w-3 text-[#10B981]" />
                                             ) : (
                                               <Copy className="h-3 w-3" />
                                             )}
@@ -1854,7 +1854,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                               target="_blank"
                                               rel="noopener noreferrer"
                                               title="Verifye sou TronScan"
-                                              className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-emerald-300"
+                                              className="p-1 rounded bg-[#262A30] hover:bg-[#363B44] text-emerald-300"
                                             >
                                               <ExternalLink className="h-3 w-3" />
                                             </a>
@@ -1865,11 +1865,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   </div>
 
                                   {isApproved && order.issuedVipKey && (
-                                    <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-500/15 border border-emerald-500/40 px-3 py-1.5 text-xs">
+                                    <div className="inline-flex items-center gap-2 rounded-lg bg-[#10B981]/15 border border-[#10B981]/40 px-3 py-1.5 text-xs">
                                       <span className="text-emerald-200 font-semibold">
                                         🔑 Kle VIP Voye bay Kliyan an:
                                       </span>
-                                      <span className="font-mono font-extrabold text-white tracking-wider">
+                                      <span className="font-mono font-extrabold text-[#F3F4F6] tracking-wider">
                                         {order.issuedVipKey}
                                       </span>
                                       <button
@@ -1880,7 +1880,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                             order.issuedVipKey || ''
                                           )
                                         }
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500 text-zinc-950 font-bold text-[11px] cursor-pointer"
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#10B981] text-[#0B1410] font-bold text-[11px] cursor-pointer"
                                       >
                                         {copiedOrderId === `key-${order.id}` ? (
                                           <>
@@ -1904,7 +1904,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                       type="button"
                                       disabled={approvingOrderId === order.id}
                                       onClick={() => void handleApproveOrder(order.id)}
-                                      className="inline-flex items-center justify-center gap-1.5 min-h-[42px] px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-65 text-zinc-950 font-display font-extrabold text-xs whitespace-nowrap transition-colors cursor-pointer"
+                                      className="inline-flex items-center justify-center gap-1.5 min-h-[42px] px-4 py-2 rounded-xl bg-[#10B981] hover:bg-[#059669] disabled:opacity-65 text-[#0B1410] font-display font-extrabold text-xs whitespace-nowrap transition-colors cursor-pointer"
                                     >
                                       <span>
                                         {approvingOrderId === order.id
@@ -1928,7 +1928,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                     type="button"
                                     onClick={() => void handleDeleteOrder(order.id)}
                                     aria-label={`Efase kòmand ${order.id}`}
-                                    className="inline-flex items-center justify-center gap-1.5 min-h-[34px] px-3 py-1.5 rounded-xl bg-[#0B0C10] border border-zinc-800 hover:border-rose-500/40 text-zinc-400 hover:text-rose-300 text-xs whitespace-nowrap transition-colors cursor-pointer"
+                                    className="inline-flex items-center justify-center gap-1.5 min-h-[34px] px-3 py-1.5 rounded-xl bg-[#1C1F24] border border-[#363B44] hover:border-rose-500/40 text-[#9CA3AF] hover:text-rose-300 text-xs whitespace-nowrap transition-colors cursor-pointer"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                     <span>Efase</span>
@@ -1945,13 +1945,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               ) : activeTab === 'visitors' ? (
                 /* 👥 Vizitè & Kliyan An Dirèk — Live Visitors Directory synced via Supabase */
                 <div className="space-y-5">
-                  <div className="rounded-xl bg-[#0E1015] border border-emerald-500/30 p-5 space-y-4">
+                  <div className="rounded-xl bg-[#202429] border border-[#10B981]/30 p-5 space-y-4">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                       <div>
-                        <h3 className="font-display text-base sm:text-lg font-bold text-white">
+                        <h3 className="font-display text-base sm:text-lg font-bold text-[#F3F4F6]">
                           👥 Vizitè &amp; Kliyan An Dirèk (Live)
                         </h3>
-                        <p className="text-xs text-zinc-400 mt-1">
+                        <p className="text-xs text-[#9CA3AF] mt-1">
                           Lis tout vizitè ki verifye non yo, peyi yo, ak vrè nimewo telefòn yo
                           anvan yo antre sou sit la — senkronize an tan reyèl ak Supabase.
                         </p>
@@ -1963,8 +1963,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           onClick={() => setVisitorFilter('all')}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
                             visitorFilter === 'all'
-                              ? 'bg-emerald-500 text-zinc-950 border-emerald-400'
-                              : 'bg-[#0B0C10] text-zinc-300 border-zinc-800 hover:border-zinc-600'
+                              ? 'bg-[#10B981] text-[#0B1410] border-emerald-400'
+                              : 'bg-[#1C1F24] text-[#D1D5DB] border-[#363B44] hover:border-[#10B981]/50'
                           }`}
                         >
                           Tout ({visitors.length})
@@ -1974,8 +1974,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           onClick={() => setVisitorFilter('online')}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
                             visitorFilter === 'online'
-                              ? 'bg-emerald-500 text-zinc-950 border-emerald-400'
-                              : 'bg-[#0B0C10] text-zinc-300 border-zinc-800 hover:border-zinc-600'
+                              ? 'bg-[#10B981] text-[#0B1410] border-emerald-400'
+                              : 'bg-[#1C1F24] text-[#D1D5DB] border-[#363B44] hover:border-[#10B981]/50'
                           }`}
                         >
                           🟢 Online ({onlineVisitorsCount})
@@ -1984,25 +1984,25 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </div>
 
                     <div className="relative">
-                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF] pointer-events-none" />
                       <input
                         type="text"
                         value={visitorSearch}
                         onChange={(e) => setVisitorSearch(e.target.value)}
                         placeholder="🔍 Chèche non kliyan, peyi, oswa nimewo telefòn..."
-                        className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none"
+                        className="w-full rounded-xl bg-[#1C1F24] border border-[#363B44] pl-10 pr-4 py-2.5 text-xs sm:text-sm text-[#F3F4F6] placeholder:text-[#9CA3AF] focus:border-[#10B981] focus:outline-none"
                       />
                     </div>
 
                     {filteredVisitors.length === 0 ? (
-                      <div className="rounded-xl border border-zinc-800 bg-[#0B0C10] p-8 text-center space-y-2">
-                        <Users className="h-9 w-9 text-zinc-600 mx-auto" />
-                        <p className="text-sm font-semibold text-zinc-200">
+                      <div className="rounded-xl border border-[#363B44] bg-[#1C1F24] p-8 text-center space-y-2">
+                        <Users className="h-9 w-9 text-[#9CA3AF] mx-auto" />
+                        <p className="text-sm font-semibold text-[#F3F4F6]">
                           {visitorFilter === 'online'
                             ? 'Pa gen okenn vizitè ki Online kounye a.'
                             : 'Pa gen okenn vizitè anrejistre ankò.'}
                         </p>
-                        <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                        <p className="text-xs text-[#9CA3AF] max-w-md mx-auto">
                           Chak fwa yon vizitè antre non li, peyi li, ak nimewo telefòn li nan pòtay
                           aksè a, li ap parèt isit la otomatikman ak estati Online li.
                         </p>
@@ -2018,8 +2018,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               key={visitor.id}
                               className={`rounded-xl border p-4 transition-colors ${
                                 online
-                                  ? 'bg-emerald-500/[0.06] border-emerald-500/45'
-                                  : 'bg-[#0B0C10] border-zinc-800'
+                                  ? 'bg-[#10B981]/[0.08] border-[#10B981]/45'
+                                  : 'bg-[#1C1F24] border-[#363B44]'
                               }`}
                             >
                               <div className="flex items-start justify-between gap-3">
@@ -2028,23 +2028,23 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                     <span
                                       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-extrabold border ${
                                         online
-                                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/45'
-                                          : 'bg-zinc-900 text-zinc-400 border-zinc-700'
+                                          ? 'bg-[#10B981]/20 text-emerald-300 border-[#10B981]/45'
+                                          : 'bg-[#262A30] text-[#9CA3AF] border-[#363B44]'
                                       }`}
                                     >
                                       <span aria-hidden="true">{online ? '🟢' : '🔴'}</span>
                                       <span>{online ? 'Online' : 'Offline'}</span>
                                     </span>
-                                    <span className="text-[11px] text-zinc-500">
+                                    <span className="text-[11px] text-[#9CA3AF]">
                                       {new Date(visitor.lastSeenAt).toLocaleString()}
                                     </span>
                                   </div>
 
-                                  <h4 className="font-display text-sm sm:text-base font-bold text-white truncate">
+                                  <h4 className="font-display text-sm sm:text-base font-bold text-[#F3F4F6] truncate">
                                     {visitor.fullName}
                                   </h4>
 
-                                  <p className="text-xs text-zinc-300 flex items-center gap-1.5">
+                                  <p className="text-xs text-[#D1D5DB] flex items-center gap-1.5">
                                     <span className="text-base leading-none" aria-hidden="true">
                                       {country.flag}
                                     </span>
@@ -2058,15 +2058,15 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   type="button"
                                   onClick={() => void handleDeleteVisitor(visitor.id)}
                                   aria-label={`Efase vizitè ${visitor.fullName}`}
-                                  className="p-1.5 rounded-lg bg-[#13151B] border border-zinc-800 hover:border-rose-500/40 text-zinc-500 hover:text-rose-300 transition-colors cursor-pointer shrink-0"
+                                  className="p-1.5 rounded-lg bg-[#262A30] border border-[#363B44] hover:border-rose-500/40 text-[#9CA3AF] hover:text-rose-300 transition-colors cursor-pointer shrink-0"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               </div>
 
-                              <div className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-[#13151B] border border-zinc-800 px-3 py-2">
+                              <div className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-[#262A30] border border-[#363B44] px-3 py-2">
                                 <div className="min-w-0">
-                                  <span className="block text-[10px] text-zinc-500">
+                                  <span className="block text-[10px] text-[#9CA3AF]">
                                     Nimewo Telefòn Verifye
                                   </span>
                                   <span className="font-mono text-xs sm:text-sm font-bold text-emerald-300 select-all">
@@ -2079,7 +2079,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   onClick={() =>
                                     void handleCopyVisitorPhone(visitor.id, visitor.phoneNumber)
                                   }
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-[11px] font-extrabold whitespace-nowrap transition-colors cursor-pointer shrink-0"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#10B981] hover:bg-[#059669] text-[#0B1410] text-[11px] font-extrabold whitespace-nowrap transition-colors cursor-pointer shrink-0"
                                 >
                                   {copiedVisitorPhoneId === visitor.id ? (
                                     <>
@@ -2104,13 +2104,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               ) : activeTab === 'requests' ? (
                 /* 📩 Demann Pake Kliyan — Most Requested Trending Folders & Individual Visitor Requests */
                 <div className="space-y-5">
-                  <div className="rounded-xl bg-[#0E1015] border border-amber-500/35 p-5 space-y-5">
+                  <div className="rounded-xl bg-[#202429] border border-amber-500/35 p-5 space-y-5">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                       <div>
-                        <h3 className="font-display text-base sm:text-lg font-bold text-white">
+                        <h3 className="font-display text-base sm:text-lg font-bold text-[#F3F4F6]">
                           📩 Demann Pake Kliyan (Ki Pake Yo Plis Mande?)
                         </h3>
-                        <p className="text-xs text-zinc-400 mt-1">
+                        <p className="text-xs text-[#9CA3AF] mt-1">
                           Chak fwa yon vizitè klike « 🔔 Mande Pake Sa a » sou yon pake An Preparasyon,
                           demann li ak nimewo telefòn li parèt isit la an tan reyèl.
                         </p>
@@ -2122,7 +2122,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                     {/* Top Requested Leaderboard */}
                     {topRequestedPacks.length > 0 && (
-                      <div className="rounded-xl bg-[#0B0C10] border border-zinc-800 p-4 space-y-3">
+                      <div className="rounded-xl bg-[#1C1F24] border border-[#363B44] p-4 space-y-3">
                         <h4 className="text-xs font-extrabold uppercase tracking-wider text-amber-300">
                           🔥 Klasman Pake Ki Plis Mande Yo (Top Demann)
                         </h4>
@@ -2130,18 +2130,18 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           {topRequestedPacks.slice(0, 9).map((item, idx) => (
                             <div
                               key={item.zipFilename}
-                              className="flex items-center justify-between gap-2 rounded-lg bg-[#13151B] border border-zinc-800 px-3 py-2.5"
+                              className="flex items-center justify-between gap-2 rounded-lg bg-[#262A30] border border-[#363B44] px-3 py-2.5"
                             >
                               <div className="min-w-0">
-                                <p className="font-mono text-xs font-bold text-white truncate">
+                                <p className="font-mono text-xs font-bold text-[#F3F4F6] truncate">
                                   #{idx + 1} · {item.zipFilename}
                                 </p>
-                                <p className="text-[11px] text-zinc-400 truncate">
+                                <p className="text-[11px] text-[#9CA3AF] truncate">
                                   {item.genre} ·{' '}
                                   {item.countries.map((cc) => getCountryByCode(cc).flag).join(' ')}
                                 </p>
                               </div>
-                              <span className="rounded-full bg-amber-400 text-zinc-950 px-2 py-0.5 text-[11px] font-extrabold tabular-nums shrink-0">
+                              <span className="rounded-full bg-amber-400 text-[#1C1F24] px-2 py-0.5 text-[11px] font-extrabold tabular-nums shrink-0">
                                 {item.count}x
                               </span>
                             </div>
@@ -2152,23 +2152,23 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                     {/* Search Bar */}
                     <div className="relative">
-                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF] pointer-events-none" />
                       <input
                         type="text"
                         value={requestSearch}
                         onChange={(e) => setRequestSearch(e.target.value)}
                         placeholder="🔍 Chèche non pake .ZIP, non kliyan, peyi, oswa nimewo telefòn..."
-                        className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-zinc-500 focus:border-amber-400 focus:outline-none"
+                        className="w-full rounded-xl bg-[#1C1F24] border border-[#363B44] pl-10 pr-4 py-2.5 text-xs sm:text-sm text-[#F3F4F6] placeholder:text-[#9CA3AF] focus:border-amber-400 focus:outline-none"
                       />
                     </div>
 
                     {filteredPackRequests.length === 0 ? (
-                      <div className="rounded-xl border border-zinc-800 bg-[#0B0C10] p-8 text-center space-y-2">
-                        <Bell className="h-9 w-9 text-zinc-600 mx-auto" />
-                        <p className="text-sm font-semibold text-zinc-200">
+                      <div className="rounded-xl border border-[#363B44] bg-[#1C1F24] p-8 text-center space-y-2">
+                        <Bell className="h-9 w-9 text-[#9CA3AF] mx-auto" />
+                        <p className="text-sm font-semibold text-[#F3F4F6]">
                           Poko gen okenn demann pake anrejistre.
                         </p>
-                        <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                        <p className="text-xs text-[#9CA3AF] max-w-md mx-auto">
                           Lè vizitè yo klike sou « 🔔 Mande Pake Sa a » sou nenpòt pake An Preparasyon,
                           w ap wè lis la isit la pou w konnen ki folder pou w upload aprè!
                         </p>
@@ -2180,20 +2180,20 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           return (
                             <div
                               key={req.id}
-                              className="rounded-xl border border-zinc-800 bg-[#0B0C10] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                              className="rounded-xl border border-[#363B44] bg-[#1C1F24] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                             >
                               <div className="space-y-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <span className="font-mono text-xs sm:text-sm font-extrabold text-amber-300 break-all">
                                     📦 {req.zipFilename}
                                   </span>
-                                  <span className="rounded bg-zinc-900 border border-zinc-800 px-2 py-0.5 text-[10px] font-semibold text-zinc-300">
+                                  <span className="rounded bg-[#262A30] border border-[#363B44] px-2 py-0.5 text-[10px] font-semibold text-[#D1D5DB]">
                                     {req.genre}
                                   </span>
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-300">
-                                  <span className="font-bold text-white">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#D1D5DB]">
+                                  <span className="font-bold text-[#F3F4F6]">
                                     👤 {req.visitorName}
                                   </span>
                                   <span>
@@ -2202,7 +2202,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   <span className="font-mono text-emerald-300 font-semibold">
                                     📞 {req.phoneNumber}
                                   </span>
-                                  <span className="text-[11px] text-zinc-500">
+                                  <span className="text-[11px] text-[#9CA3AF]">
                                     · {new Date(req.createdAt).toLocaleString()}
                                   </span>
                                 </div>
@@ -2214,7 +2214,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   onClick={() =>
                                     void handleCopyRequestPhone(req.id, req.phoneNumber)
                                   }
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-[11px] font-extrabold whitespace-nowrap transition-colors cursor-pointer"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#10B981] hover:bg-[#059669] text-[#0B1410] text-[11px] font-extrabold whitespace-nowrap transition-colors cursor-pointer"
                                 >
                                   {copiedRequestId === req.id ? (
                                     <>
@@ -2232,7 +2232,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   type="button"
                                   onClick={() => void handleDeletePackRequest(req.id)}
                                   aria-label={`Efase demann ${req.zipFilename}`}
-                                  className="p-2 rounded-lg bg-[#13151B] border border-zinc-800 hover:border-rose-500/40 text-zinc-400 hover:text-rose-300 transition-colors cursor-pointer"
+                                  className="p-2 rounded-lg bg-[#262A30] border border-[#363B44] hover:border-rose-500/40 text-[#9CA3AF] hover:text-rose-300 transition-colors cursor-pointer"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>
@@ -2247,14 +2247,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               ) : activeTab === 'packs' ? (
                 /* 📁 Jere Pake Mizik Yo — Activate Coming Soon Folders + Free Admin Test Download + Delete */
                 <div className="space-y-4">
-                  <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 space-y-3">
+                  <div className="rounded-xl bg-[#10B981]/10 border border-[#10B981]/30 p-4 space-y-3">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                       <div>
                         <h3 className="font-display text-base font-bold text-emerald-300">
                           👑 Jere Folder .ZIP yo — Telechaje Gratis, Aktive oswa Siprime nenpòt
                           Folder
                         </h3>
-                        <p className="text-xs text-zinc-300 mt-1">
+                        <p className="text-xs text-[#D1D5DB] mt-1">
                           Teste nenpòt folder .ZIP gratis, ajoute mizik sou yon folder « An
                           Preparasyon » pou w aktive l, oswa kopye kòd folder ou yo pou mete sou
                           entènèt.
@@ -2264,7 +2264,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         <button
                           type="button"
                           onClick={() => void handleExportFoldersCode()}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-extrabold whitespace-nowrap transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#10B981] hover:bg-[#059669] text-[#0B1410] text-xs font-extrabold whitespace-nowrap transition-colors cursor-pointer"
                         >
                           {exportCopiedBanner ? (
                             <Check className="h-3.5 w-3.5 shrink-0" />
@@ -2277,9 +2277,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           <button
                             type="button"
                             onClick={handleRestoreDemoPacks}
-                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#0B0C10] border border-zinc-700 hover:border-emerald-500 text-xs font-semibold text-zinc-200 whitespace-nowrap shrink-0 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1C1F24] border border-[#363B44] hover:border-[#10B981] text-xs font-semibold text-[#F3F4F6] whitespace-nowrap shrink-0 cursor-pointer"
                           >
-                            <RotateCcw className="h-3.5 w-3.5 text-emerald-400" />
+                            <RotateCcw className="h-3.5 w-3.5 text-[#10B981]" />
                             <span>
                               {hasPermanentCustomDefaults()
                                 ? `Reyajiste Folder Ofisyèl yo (${loadDeletedPackIds().length})`
@@ -2291,7 +2291,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </div>
 
                     {exportedFoldersResult && (
-                      <div className="rounded-xl bg-[#090A0D] border border-emerald-500/40 p-4 space-y-3">
+                      <div className="rounded-xl bg-[#1C1F24] border border-[#10B981]/40 p-4 space-y-3">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
                             <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -2304,7 +2304,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                             <button
                               type="button"
                               onClick={() => void handleExportFoldersCode()}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/40 hover:bg-emerald-500/25 text-xs font-semibold text-emerald-200 cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#10B981]/15 border border-[#10B981]/40 hover:bg-[#10B981]/25 text-xs font-semibold text-emerald-200 cursor-pointer"
                             >
                               <Copy className="h-3 w-3" />
                               <span>{exportCopiedBanner ? 'Kopye!' : 'Kopye Ankò'}</span>
@@ -2312,21 +2312,21 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                             <button
                               type="button"
                               onClick={() => setExportedFoldersResult(null)}
-                              className="px-2.5 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-white cursor-pointer"
+                              className="px-2.5 py-1.5 rounded-lg text-xs text-[#9CA3AF] hover:text-[#F3F4F6] cursor-pointer"
                             >
                               Fèmen
                             </button>
                           </div>
                         </div>
 
-                        <p className="text-xs text-zinc-300 leading-relaxed">
-                          <strong className="text-white">Kòman pou w mete l pèmanan:</strong> Kòd
+                        <p className="text-xs text-[#D1D5DB] leading-relaxed">
+                          <strong className="text-[#F3F4F6]">Kòman pou w mete l pèmanan:</strong> Kòd
                           JSON sa a gen tout vrè folder pa w yo ak tout emoji yo (
                           <span className="font-mono text-emerald-300">
                             RABODAY_VIBE_👯‍♂️🥶🥵.zip
                           </span>
                           , elatriye). Kole l nan chat AI Studio a (oswa dirèkteman nan fichye{' '}
-                          <span className="font-mono text-zinc-200">
+                          <span className="font-mono text-[#F3F4F6]">
                             src/data/customDefaultFolders.json
                           </span>
                           ) pou mete tout nouvo folder ou yo ofisyèl pou tout vizitè sou iPhone ak
@@ -2336,7 +2336,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         {!hasPermanentCustomDefaults() &&
                           exportedFoldersResult.ownerFolderCount > 0 && (
                           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                            <label className="inline-flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+                            <label className="inline-flex items-center gap-2 text-xs text-[#D1D5DB] cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={exportIncludeBuiltIn}
@@ -2345,7 +2345,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   setExportIncludeBuiltIn(next);
                                   void handleExportFoldersCode(next);
                                 }}
-                                className="rounded border-zinc-600 bg-[#0B0C10] text-emerald-500 focus:ring-emerald-500"
+                                className="rounded border-[#363B44] bg-[#262A30] text-[#10B981] focus:ring-[#10B981]"
                               />
                               <span>
                                 Mete ansyen folder demo yo tou ({exportedFoldersResult.ownerFolderCount}{' '}
@@ -2372,27 +2372,27 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           onFocus={(e) => e.currentTarget.select()}
                           rows={6}
                           aria-label="JSON tout folder ou yo"
-                          className="w-full rounded-lg bg-[#0B0C10] border border-zinc-800 p-3 font-mono text-[11px] text-emerald-200 focus:border-emerald-500 focus:outline-none"
+                          className="w-full rounded-lg bg-[#262A30] border border-[#363B44] p-3 font-mono text-[11px] text-emerald-200 focus:border-[#10B981] focus:outline-none"
                         />
                       </div>
                     )}
                   </div>
 
                   {allPacks.length === 0 ? (
-                    <div className="rounded-xl border border-zinc-800 bg-[#0E1015] p-8 text-center space-y-3">
-                      <p className="text-sm font-semibold text-zinc-200">
+                    <div className="rounded-xl border border-[#363B44] bg-[#202429] p-8 text-center space-y-3">
+                      <p className="text-sm font-semibold text-[#F3F4F6]">
                         Pa gen okenn folder .ZIP aktif kounye a.
                       </p>
-                      <p className="text-xs text-zinc-400">
+                      <p className="text-xs text-[#9CA3AF]">
                         Chwazi yon folder mizik sou laptop ou anlè a oswa reyajiste folder ofisyèl yo.
                       </p>
                       {loadDeletedPackIds().length > 0 && (
                         <button
                           type="button"
                           onClick={handleRestoreDemoPacks}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#262A30] border border-[#363B44] hover:bg-[#2E333B] text-xs font-bold text-[#F3F4F6] cursor-pointer"
                         >
-                          <RotateCcw className="h-3.5 w-3.5 text-emerald-400" />
+                          <RotateCcw className="h-3.5 w-3.5 text-[#10B981]" />
                           <span>
                             {hasPermanentCustomDefaults()
                               ? 'Reyajiste Folder Ofisyèl yo'
@@ -2413,10 +2413,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                             key={pack.id}
                             className={`flex flex-col justify-between rounded-xl border p-4 gap-4 ${
                               isComingSoon
-                                ? 'bg-amber-500/[0.04] border-amber-500/50'
+                                ? 'bg-amber-500/[0.05] border-amber-500/50'
                                 : pack.isCustomUpload
-                                  ? 'bg-[#0E1015] border-amber-500/45'
-                                  : 'bg-[#0E1015] border-zinc-800'
+                                  ? 'bg-[#202429] border-amber-500/45'
+                                  : 'bg-[#202429] border-[#363B44]'
                             }`}
                           >
                             <div className="flex items-start gap-3.5 min-w-0">
@@ -2424,7 +2424,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                 className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border ${
                                   isComingSoon
                                     ? 'bg-amber-500/15 border-amber-400/45 text-amber-300'
-                                    : 'bg-emerald-500/15 border-emerald-500/35 text-emerald-400'
+                                    : 'bg-[#10B981]/15 border-[#10B981]/35 text-[#10B981]'
                                 }`}
                               >
                                 {isComingSoon ? (
@@ -2439,14 +2439,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                     ⏳ AN PREPARASYON · {pack.genre}
                                   </p>
                                 ) : (
-                                  <p className="text-xs text-emerald-400 font-medium">
+                                  <p className="text-xs text-[#10B981] font-medium">
                                     {pack.genre} · {pack.trackCount} Mizik an Lòd • .ZIP
                                   </p>
                                 )}
-                                <h4 className="font-mono text-sm leading-snug font-bold text-white mt-0.5">
+                                <h4 className="font-mono text-sm leading-snug font-bold text-[#F3F4F6] mt-0.5">
                                   <ZipFilenameText filename={formatZipFolderFilename(pack)} />
                                 </h4>
-                                <p className="text-[11px] text-zinc-400 mt-1 tabular-nums">
+                                <p className="text-[11px] text-[#9CA3AF] mt-1 tabular-nums">
                                   {isComingSoon
                                     ? 'Poko gen mizik — klike bouton jòn/vèt la pou w ajoute MP3 yo'
                                     : `${pack.trackCount} Mizik · ${pack.fileSize}`}
@@ -2454,13 +2454,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               </div>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-zinc-800/80">
+                            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#363B44]">
                               {isComingSoon ? (
                                 <button
                                   type="button"
                                   disabled={isProcessingFolder}
                                   onClick={() => handleStartActivateComingSoon(pack.id)}
-                                  className="flex-1 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 disabled:opacity-60 text-zinc-950 text-xs font-extrabold whitespace-nowrap transition-colors cursor-pointer"
+                                  className="flex-1 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 disabled:opacity-60 text-[#1C1F24] text-xs font-extrabold whitespace-nowrap transition-colors cursor-pointer"
                                 >
                                   <FolderUp className="h-3.5 w-3.5 shrink-0" />
                                   <span>
@@ -2474,7 +2474,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   type="button"
                                   disabled={isDownloading}
                                   onClick={() => void onAdminFreeDownloadPack(pack)}
-                                  className="flex-1 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-zinc-950 text-xs font-bold whitespace-nowrap transition-colors cursor-pointer"
+                                  className="flex-1 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 rounded-xl bg-[#10B981] hover:bg-[#059669] disabled:opacity-60 text-[#0B1410] text-xs font-bold whitespace-nowrap transition-colors cursor-pointer"
                                 >
                                   <Download className="h-3.5 w-3.5 shrink-0" />
                                   <span>
@@ -2488,7 +2488,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleDeletePack(pack.id)}
-                                className="inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 rounded-xl bg-rose-500/15 border border-rose-500/45 hover:bg-rose-500 text-rose-300 hover:text-white text-xs font-bold whitespace-nowrap transition-colors cursor-pointer"
+                                className="inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 rounded-xl bg-rose-500/15 border border-rose-500/45 hover:bg-rose-500 text-rose-300 hover:text-[#F3F4F6] text-xs font-bold whitespace-nowrap transition-colors cursor-pointer"
                               >
                                 <span>🗑️ Siprime Folder</span>
                               </button>
@@ -2504,13 +2504,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   {/* Short VIP Code & Folder Quota Generator Form */}
                   <form
                     onSubmit={(e) => void handleCreateKey(e)}
-                    className="rounded-xl bg-[#0E1015] border border-zinc-800 p-5 space-y-5"
+                    className="rounded-xl bg-[#202429] border border-[#363B44] p-5 space-y-5"
                   >
                     <div>
-                      <h3 className="font-display text-base font-bold text-white">
+                      <h3 className="font-display text-base font-bold text-[#F3F4F6]">
                         1. Chwazi Kantite Folder pou Kòd VIP la
                       </h3>
-                      <p className="text-xs text-zinc-400 mt-1">
+                      <p className="text-xs text-[#9CA3AF] mt-1">
                         Chak kòd fèt pou yon sèl itilizasyon (« Yon Sèl Fwa ») epi li boule nèt
                         otomatikman lè tout folder li yo fini.
                       </p>
@@ -2532,8 +2532,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               plan.id === 'unlimited-vip' ? 'sm:col-span-2' : ''
                             } ${
                               isSelected
-                                ? 'bg-emerald-500/15 border-emerald-500 text-emerald-200'
-                                : 'bg-[#0B0C10] border-zinc-800 text-zinc-300 hover:border-zinc-600'
+                                ? 'bg-[#10B981]/15 border-[#10B981] text-emerald-200'
+                                : 'bg-[#1C1F24] border-[#363B44] text-[#D1D5DB] hover:border-[#10B981]/50'
                             }`}
                           >
                             <span>{plan.label}</span>
@@ -2543,13 +2543,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </div>
 
                     {/* Custom Short Code Pattern & Manual Override */}
-                    <div className="border-t border-zinc-800/80 pt-5 space-y-4">
+                    <div className="border-t border-[#363B44] pt-5 space-y-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
-                          <h4 className="font-display text-sm font-bold text-white">
+                          <h4 className="font-display text-sm font-bold text-[#F3F4F6]">
                             2. Modèl Kòd Kout Sekrè &amp; Pèsonalizasyon
                           </h4>
-                          <p className="text-xs text-zinc-400 mt-0.5">
+                          <p className="text-xs text-[#9CA3AF] mt-0.5">
                             Jenere yon kòd 6–8 karaktè ak senbòl (ex: W#84K2, JW@91X) oswa tape
                             pwòp kòd ou (ex: W*94K#).
                           </p>
@@ -2565,8 +2565,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               }}
                               className={`px-2.5 py-1 rounded-md text-xs font-mono border transition-colors cursor-pointer ${
                                 patternPrefix === prefix
-                                  ? 'bg-emerald-500/15 border-emerald-500 text-emerald-300'
-                                  : 'bg-[#0B0C10] border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                                  ? 'bg-[#10B981]/15 border-[#10B981] text-emerald-300'
+                                  : 'bg-[#1C1F24] border-[#363B44] text-[#9CA3AF] hover:text-[#F3F4F6]'
                               }`}
                             >
                               {prefix}
@@ -2579,7 +2579,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         <div className="sm:col-span-3">
                           <label
                             htmlFor="pattern-prefix-input"
-                            className="block text-xs font-medium text-zinc-300 mb-1.5"
+                            className="block text-xs font-medium text-[#D1D5DB] mb-1.5"
                           >
                             Prefiks / Senbòl
                           </label>
@@ -2590,14 +2590,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                             value={patternPrefix}
                             onChange={(e) => setPatternPrefix(e.target.value.toUpperCase())}
                             placeholder="W#"
-                            className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 px-3.5 py-2.5 text-sm font-mono text-white placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none"
+                            className="w-full rounded-xl bg-[#1C1F24] border border-[#363B44] px-3.5 py-2.5 text-sm font-mono text-[#F3F4F6] placeholder:text-[#9CA3AF] focus:border-[#10B981] focus:outline-none"
                           />
                         </div>
 
                         <div className="sm:col-span-5">
                           <label
                             htmlFor="editable-short-code"
-                            className="block text-xs font-medium text-zinc-300 mb-1.5"
+                            className="block text-xs font-medium text-[#D1D5DB] mb-1.5"
                           >
                             Kòd VIP Kout (Ou ka modifye l)
                           </label>
@@ -2613,7 +2613,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               if (createError) setCreateError(null);
                             }}
                             placeholder="Ex: W#84K2 oswa W*94K#"
-                            className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 px-3.5 py-2.5 text-sm font-mono font-bold tracking-wider text-emerald-300 placeholder:font-normal placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none"
+                            className="w-full rounded-xl bg-[#1C1F24] border border-[#363B44] px-3.5 py-2.5 text-sm font-mono font-bold tracking-wider text-emerald-300 placeholder:font-normal placeholder:text-[#9CA3AF] focus:border-[#10B981] focus:outline-none"
                           />
                         </div>
 
@@ -2621,9 +2621,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleGenerateRandomShortCode()}
-                            className="w-full inline-flex items-center justify-center gap-1.5 min-h-[42px] px-3.5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-xs font-bold text-white whitespace-nowrap transition-colors cursor-pointer"
+                            className="w-full inline-flex items-center justify-center gap-1.5 min-h-[42px] px-3.5 py-2.5 rounded-xl bg-[#262A30] hover:bg-[#2E333B] border border-[#363B44] text-xs font-bold text-[#F3F4F6] whitespace-nowrap transition-colors cursor-pointer"
                           >
-                            <Sparkles className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                            <Sparkles className="h-3.5 w-3.5 text-[#10B981] shrink-0" />
                             <span>⚡ Jenere Kòd Kout Sekrè</span>
                           </button>
                         </div>
@@ -2634,7 +2634,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       <div>
                         <label
                           htmlFor="custom-folder-quota"
-                          className="block text-xs font-medium text-zinc-300 mb-1.5"
+                          className="block text-xs font-medium text-[#D1D5DB] mb-1.5"
                         >
                           Kantite Folder Pèsonalize
                         </label>
@@ -2646,13 +2646,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           value={customQuotaInput}
                           onChange={(e) => setCustomQuotaInput(e.target.value)}
                           placeholder="Egzanp: 2, 15, 20"
-                          className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 px-3.5 py-2.5 text-sm font-mono text-white placeholder:font-sans placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none"
+                          className="w-full rounded-xl bg-[#1C1F24] border border-[#363B44] px-3.5 py-2.5 text-sm font-mono text-[#F3F4F6] placeholder:font-sans placeholder:text-[#9CA3AF] focus:border-[#10B981] focus:outline-none"
                         />
                       </div>
                       <div>
                         <label
                           htmlFor="client-note-input"
-                          className="block text-xs font-medium text-zinc-300 mb-1.5"
+                          className="block text-xs font-medium text-[#D1D5DB] mb-1.5"
                         >
                           Non Kliyan / Nòt (Opsyonèl)
                         </label>
@@ -2662,7 +2662,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           value={clientNote}
                           onChange={(e) => setClientNote(e.target.value)}
                           placeholder="Egzanp: DJ Marc - TikTok"
-                          className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none"
+                          className="w-full rounded-xl bg-[#1C1F24] border border-[#363B44] px-3.5 py-2.5 text-sm text-[#F3F4F6] placeholder:text-[#9CA3AF] focus:border-[#10B981] focus:outline-none"
                         />
                       </div>
                     </div>
@@ -2678,9 +2678,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     )}
 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-                      <p className="text-xs text-zinc-400 tabular-nums">
+                      <p className="text-xs text-[#9CA3AF] tabular-nums">
                         Plan seleksyone:{' '}
-                        <span className="font-semibold text-white">
+                        <span className="font-semibold text-[#F3F4F6]">
                           {activeQuota >= 999
                             ? "👑 KLE VIP ILIMITE (♾️ Folder a L'Infini)"
                             : `${activeQuota} Folder (${(activeQuota * 100).toLocaleString('en-US')} Mizik)`}
@@ -2689,7 +2689,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       <button
                         type="submit"
                         disabled={isCreatingKey}
-                        className="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-65 text-zinc-950 font-display font-bold text-sm whitespace-nowrap transition-colors cursor-pointer"
+                        className="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl bg-[#10B981] hover:bg-[#059669] disabled:opacity-65 text-[#0B1410] font-display font-bold text-sm whitespace-nowrap transition-colors cursor-pointer"
                       >
                         <span>{isCreatingKey ? '⏳ Ap kreye...' : '⚡ Kreye Kle VIP'}</span>
                       </button>
@@ -2699,11 +2699,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   {/* Generated Keys Table */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-display text-base font-bold text-white">
+                      <h3 className="font-display text-base font-bold text-[#F3F4F6]">
                         Lis Kòd VIP yo ({keys.length})
                       </h3>
                       {lastCreatedCode && (
-                        <span className="text-xs text-emerald-400 font-medium">
+                        <span className="text-xs text-[#10B981] font-medium">
                           Nouvo kòd kreye:{' '}
                           <span className="font-mono font-bold">{lastCreatedCode}</span>
                         </span>
@@ -2711,15 +2711,15 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </div>
 
                     {keys.length === 0 ? (
-                      <div className="rounded-xl border border-zinc-800 bg-[#0E1015] p-8 text-center text-sm text-zinc-400">
+                      <div className="rounded-xl border border-[#363B44] bg-[#202429] p-8 text-center text-sm text-[#9CA3AF]">
                         Ou poko kreye okenn Kòd VIP. Chwazi yon kantite folder, verifye kòd kout
                         la epi klike sou « ⚡ Kreye Kle VIP ».
                       </div>
                     ) : (
-                      <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-[#0E1015]">
+                      <div className="overflow-x-auto rounded-xl border border-[#363B44] bg-[#202429]">
                         <table className="w-full text-left border-collapse">
                           <thead>
-                            <tr className="border-b border-zinc-800 text-xs font-medium text-zinc-400">
+                            <tr className="border-b border-[#363B44] text-xs font-medium text-[#9CA3AF]">
                               <th className="py-3 px-4">Kòd VIP</th>
                               <th className="py-3 px-4">Estati</th>
                               <th className="py-3 px-4">Kredi ki Rete</th>
@@ -2727,20 +2727,20 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               <th className="py-3 px-4 text-right">Aksyon</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-zinc-800/70 text-sm">
+                          <tbody className="divide-y divide-[#363B44] text-sm">
                             {keys.map((record) => {
                               const status = getVipKeyStatus(record);
                               const usedFolders = record.totalFolders - record.remainingFolders;
                               const isCopied = copiedCode === record.code;
 
                               return (
-                                <tr key={record.code} className="hover:bg-zinc-900/40">
-                                  <td className="py-3 px-4 font-mono font-bold text-white whitespace-nowrap tracking-wider">
+                                <tr key={record.code} className="hover:bg-[#262A30]/70">
+                                  <td className="py-3 px-4 font-mono font-bold text-[#F3F4F6] whitespace-nowrap tracking-wider">
                                     {record.code}
                                   </td>
                                   <td className="py-3 px-4 whitespace-nowrap text-xs font-semibold tabular-nums">
                                     {status === 'available' && (
-                                      <span className="text-emerald-400">
+                                      <span className="text-[#10B981]">
                                         🟢 DISPONIB (Poko Sèvi)
                                       </span>
                                     )}
@@ -2757,12 +2757,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                       </span>
                                     )}
                                   </td>
-                                  <td className="py-3 px-4 whitespace-nowrap text-xs text-zinc-300 tabular-nums">
+                                  <td className="py-3 px-4 whitespace-nowrap text-xs text-[#D1D5DB] tabular-nums">
                                     {record.totalFolders >= 999
                                       ? '👑 Ilimite (♾️)'
                                       : `Rete ${record.remainingFolders} / ${record.totalFolders} Folder`}
                                   </td>
-                                  <td className="py-3 px-4 text-xs text-zinc-400 max-w-[140px] truncate">
+                                  <td className="py-3 px-4 text-xs text-[#9CA3AF] max-w-[140px] truncate">
                                     {record.note || '—'}
                                   </td>
                                   <td className="py-3 px-4 text-right whitespace-nowrap">
@@ -2770,16 +2770,16 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                       <button
                                         type="button"
                                         onClick={() => handleCopyVipKeyMessage(record)}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B0C10] border border-zinc-700 hover:border-emerald-500 text-xs font-medium text-zinc-200 transition-colors cursor-pointer"
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C1F24] border border-[#363B44] hover:border-[#10B981] text-xs font-medium text-[#D1D5DB] hover:text-[#F3F4F6] transition-colors cursor-pointer"
                                       >
                                         {isCopied ? (
                                           <>
-                                            <Check className="h-3.5 w-3.5 text-emerald-400" />
+                                            <Check className="h-3.5 w-3.5 text-[#10B981]" />
                                             <span className="text-emerald-300">Kopye!</span>
                                           </>
                                         ) : (
                                           <>
-                                            <Copy className="h-3.5 w-3.5 text-zinc-400" />
+                                            <Copy className="h-3.5 w-3.5 text-[#9CA3AF]" />
                                             <span>📋 Kopye Kle VIP la</span>
                                           </>
                                         )}
@@ -2788,7 +2788,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                         type="button"
                                         onClick={() => void handleDeleteKey(record.code)}
                                         aria-label={`Efase kòd ${record.code}`}
-                                        className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-zinc-800 transition-colors cursor-pointer"
+                                        className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-rose-400 hover:bg-[#262A30] transition-colors cursor-pointer"
                                       >
                                         <Trash2 className="h-4 w-4" />
                                       </button>
@@ -2806,15 +2806,15 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   {/* Automated Online Checkout Links Manager (Payhip / USDT / Virtual Card) */}
                   <form
                     onSubmit={handleSaveCheckoutLinks}
-                    className="rounded-xl bg-[#0E1015] border border-emerald-500/30 p-5 space-y-4"
+                    className="rounded-xl bg-[#202429] border border-[#10B981]/30 p-5 space-y-4"
                   >
-                    <div className="flex items-start gap-2.5 border-b border-zinc-800/80 pb-3">
-                      <CreditCard className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                    <div className="flex items-start gap-2.5 border-b border-[#363B44] pb-3">
+                      <CreditCard className="h-5 w-5 text-[#10B981] shrink-0 mt-0.5" />
                       <div>
-                        <h3 className="font-display text-base font-bold text-white">
+                        <h3 className="font-display text-base font-bold text-[#F3F4F6]">
                           💳 Lyen Peman Otomatik An Liy (Payhip / Crypto USDT / Kat Vityèl)
                         </h3>
-                        <p className="text-xs text-zinc-400 mt-0.5">
+                        <p className="text-xs text-[#9CA3AF] mt-0.5">
                           Kole lyen checkout otomatik ou yo pou kliyan yo ka peye epi resevwa Kle VIP
                           yo touswit an liy, 100% otomatik.
                         </p>
@@ -2822,8 +2822,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </div>
 
                     {checkoutSaveBanner && (
-                      <div className="rounded-xl bg-emerald-500/15 border border-emerald-500/40 px-4 py-2.5 text-xs font-semibold text-emerald-200 flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                      <div className="rounded-xl bg-[#10B981]/15 border border-[#10B981]/40 px-4 py-2.5 text-xs font-semibold text-emerald-200 flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-[#10B981]" />
                         <span>{checkoutSaveBanner}</span>
                       </div>
                     )}
@@ -2831,7 +2831,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     <div>
                       <label
                         htmlFor="default-checkout-url-input"
-                        className="block text-xs font-semibold text-zinc-200 mb-1.5"
+                        className="block text-xs font-semibold text-[#D1D5DB] mb-1.5"
                       >
                         Lyen Peman Prensipal (Itilize pou tout plan si pa gen lyen espesifik)
                       </label>
@@ -2847,7 +2847,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           if (checkoutUrlError) setCheckoutUrlError(null);
                         }}
                         placeholder="https://payhip.com/... oswa https://nowpayments.io/..."
-                        className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 px-3.5 py-2.5 font-mono text-xs sm:text-sm text-white placeholder:font-sans placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none"
+                        className="w-full rounded-xl bg-[#1C1F24] border border-[#363B44] px-3.5 py-2.5 font-mono text-xs sm:text-sm text-[#F3F4F6] placeholder:font-sans placeholder:text-[#9CA3AF] focus:border-[#10B981] focus:outline-none"
                       />
                     </div>
 
@@ -2884,7 +2884,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         <div key={item.id} className={item.spanFull ? 'sm:col-span-2' : ''}>
                           <label
                             htmlFor={`checkout-url-${item.id}`}
-                            className="block text-[11px] font-semibold text-zinc-300 mb-1"
+                            className="block text-[11px] font-semibold text-[#D1D5DB] mb-1"
                           >
                             {item.label} (Opsyonèl)
                           </label>
@@ -2904,7 +2904,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               if (checkoutUrlError) setCheckoutUrlError(null);
                             }}
                             placeholder="https://..."
-                            className="w-full rounded-xl bg-[#0B0C10] border border-zinc-700 px-3 py-2 font-mono text-xs text-white placeholder:font-sans placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none"
+                            className="w-full rounded-xl bg-[#1C1F24] border border-[#363B44] px-3 py-2 font-mono text-xs text-[#F3F4F6] placeholder:font-sans placeholder:text-[#9CA3AF] focus:border-[#10B981] focus:outline-none"
                           />
                         </div>
                       ))}
@@ -2919,7 +2919,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     <div className="flex justify-end pt-1">
                       <button
                         type="submit"
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-display font-extrabold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#10B981] hover:bg-[#059669] text-[#0B1410] font-display font-extrabold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer"
                       >
                         <Save className="h-4 w-4 shrink-0" />
                         <span>💾 Anrejistre Lyen Peman yo</span>
