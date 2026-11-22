@@ -23,12 +23,10 @@ import {
   fetchVipKeyByCodeRemote,
   formatZipFolderFilename,
   getAllMusicPacks,
-  getFolderColorConfig,
-  getFolderCuesConfig,
   getVipKeyByCode,
   subscribeSingleVipKeyRealtime,
 } from './data/musicPacks';
-import { buildVirtualDjColorZip } from './utils/id3Mp3Packager';
+import { buildCleanMp3Zip } from './utils/id3Mp3Packager';
 import { WelcomeVipModal } from './components/WelcomeVipModal';
 import { AdminPanelModal } from './components/AdminPanelModal';
 import { QuotaExhaustedModal } from './components/QuotaExhaustedModal';
@@ -364,24 +362,68 @@ export default function App() {
     setIsWelcomeOpen(true);
   };
 
-  const triggerZipDownload = useCallback(async (pack: MusicPack, keyCode: string) => {
+  const [downloadProgress, setDownloadProgress] = useState<{
+    status: 'preparing' | 'zipping' | 'completed';
+    percent: number;
+    current: number;
+    total: number;
+    trackName: string;
+    zipBlob?: Blob;
+    zipFilename?: string;
+  } | null>(null);
+
+  const triggerZipDownload = useCallback(async (pack: MusicPack): Promise<{ success: boolean; blob?: Blob; filename?: string }> => {
+    const filename = formatZipFolderFilename(pack);
     setPackagingPackId(pack.id);
+    setDownloadProgress({
+      status: 'preparing',
+      percent: 0,
+      current: 0,
+      total: pack.tracks?.length || 1,
+      trackName: `N ap prepare ${filename}...`,
+    });
+
     try {
-      const colorConfig = getFolderColorConfig(pack.id);
-      const cuesConfig = getFolderCuesConfig(pack.id);
-      const zipBlob = await buildVirtualDjColorZip(pack, keyCode, colorConfig, cuesConfig);
+      const zipBlob = await buildCleanMp3Zip(pack, (current, total, trackName) => {
+        const percent = total === 100 ? current : Math.round((current / total) * 100);
+        setDownloadProgress({
+          status: 'zipping',
+          percent: Math.min(100, Math.max(0, percent)),
+          current: total === 100 ? Math.round((current / 100) * (pack.tracks?.length || 1)) : current,
+          total: pack.tracks?.length || total,
+          trackName,
+        });
+      });
+
+      setDownloadProgress({
+        status: 'completed',
+        percent: 100,
+        current: pack.tracks?.length || 1,
+        total: pack.tracks?.length || 1,
+        trackName: `✅ TELECHAJE KONPLÈ! Fichye .ZIP la anrejistre nan Downloads ou.`,
+        zipBlob,
+        zipFilename: filename,
+      });
+
       const url = URL.createObjectURL(zipBlob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = formatZipFolderFilename(pack);
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-      URL.revokeObjectURL(url);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+      showToast(`✅ Folder "${pack.title}" telechaje avèk siksè nan Downloads ou!`);
+      return { success: true, blob: zipBlob, filename };
+    } catch (err: any) {
+      setDownloadProgress(null);
+      showToast(`❌ Erè telechajman: ${err?.message || 'Echèk jenere .ZIP'}`);
+      return { success: false };
     } finally {
       setPackagingPackId(null);
     }
-  }, []);
+  }, [showToast]);
 
   const handleAdminAuthenticated = useCallback(() => {
     try {
@@ -410,7 +452,7 @@ export default function App() {
   const handleAdminFreeDownloadPack = useCallback(
     async (pack: MusicPack) => {
       if (!isAdminAuthenticated || pack.isComingSoon) return;
-      await triggerZipDownload(pack, 'ADMIN-FREE-VIP');
+      await triggerZipDownload(pack);
       showToast(`⚡ Telechaje Gratis Admin: ${formatZipFolderFilename(pack)}`);
     },
     [isAdminAuthenticated, showToast, triggerZipDownload]
@@ -437,6 +479,13 @@ export default function App() {
         return;
       }
 
+      // 1. Generate .ZIP blob & trigger browser download first
+      const dlResult = await triggerZipDownload(pack);
+      if (!dlResult.success) {
+        return;
+      }
+
+      // 2. Only deduct 1 VIP folder credit AFTER the .ZIP blob is successfully generated and a.click() fires!
       const result = await consumeFolderCreditRemote(activeKey.code, pack.id);
       if (!result.allowed || !result.updatedRecord) {
         window.localStorage.removeItem(ACTIVE_KEY_STORAGE_KEY);
@@ -446,7 +495,6 @@ export default function App() {
       }
 
       setActiveKey(result.updatedRecord);
-      await triggerZipDownload(pack, result.updatedRecord.code);
 
       if (result.justExhausted || result.updatedRecord.remainingFolders <= 0) {
         window.localStorage.removeItem(ACTIVE_KEY_STORAGE_KEY);
@@ -1095,6 +1143,61 @@ export default function App() {
         onCustomPacksChanged={() => setCustomPacksVersion((v) => v + 1)}
         onCheckoutConfigChanged={() => {}}
       />
+
+      {/* Floating Download Progress Panel */}
+      {downloadProgress && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4 animate-in fade-in slide-in-from-bottom-6 duration-300">
+          <div className="rounded-2xl bg-[#13151B]/95 border border-emerald-500/50 p-5 shadow-[0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-3 w-3 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <span className="font-display font-bold text-sm text-white tracking-tight">
+                  {downloadProgress.status === 'completed'
+                    ? '✅ TELECHAJE KONPLÈ!'
+                    : '📥 TELECHAJMAN AN KOU...'}
+                </span>
+              </div>
+              <span className="font-mono text-xs font-bold text-emerald-400 tabular-nums">
+                {downloadProgress.percent}%
+              </span>
+            </div>
+
+            <p className="font-mono text-xs text-zinc-300 truncate mb-3">
+              {downloadProgress.trackName}
+            </p>
+
+            {/* Animated Progress Bar */}
+            <div className="w-full h-3 bg-zinc-800 rounded-full overflow-hidden p-0.5 border border-zinc-700/60 mb-3">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(16,185,129,0.5)]"
+                style={{ width: `${Math.max(5, downloadProgress.percent)}%` }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-zinc-400">
+              <span>
+                {downloadProgress.status === 'completed'
+                  ? 'Fichye .ZIP la anrejistre nan Downloads ou.'
+                  : `Mizik ${downloadProgress.current} / ${downloadProgress.total} ap prepare...`}
+              </span>
+              {downloadProgress.status === 'completed' &&
+                downloadProgress.zipBlob &&
+                downloadProgress.zipFilename && (
+                  <a
+                    href={URL.createObjectURL(downloadProgress.zipBlob)}
+                    download={downloadProgress.zipFilename}
+                    className="font-bold text-emerald-300 hover:text-emerald-200 underline underline-offset-2 cursor-pointer"
+                  >
+                    ⬇️ Klike Isit Si L Pa Kòmanse
+                  </a>
+                )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Non-intrusive Feedback Toast */}
       {toastMessage && (

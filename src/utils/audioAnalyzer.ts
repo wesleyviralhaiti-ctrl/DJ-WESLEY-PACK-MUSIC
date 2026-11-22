@@ -1,15 +1,11 @@
-// Web Audio API (decodeAudioData) energy & onset scanner for VirtualDJ Hot Cues
-// Cue 1 (Green #22C55E): "1: KÒMANSMAN" — first clean beat/percussion start (skipping intro silence)
-// Cue 2 (Red #EF4444): "2: PI GOU / DROP" — peak energy section where chorus/bassline/drop hits hardest
+// Audio analyzer & metadata parser for Wesley Music Packs
+// Extracts real audio duration and metadata from uploaded MP3 files
 
-export interface AnalyzedAudioResult {
-  cue1Seconds: number;
-  cue2Seconds: number;
+export interface AudioMetadataResult {
   durationSeconds: number;
   durationFormatted: string;
-  peakRms: number;
-  titleGuess: string;
   artistGuess: string;
+  titleGuess: string;
 }
 
 // In-memory store for uploaded audio raw ArrayBuffers keyed by `${packId}:${trackNumber}`
@@ -201,7 +197,7 @@ export async function extractDroppedAudioFiles(
   };
 }
 
-function formatDuration(seconds: number): string {
+export function formatDuration(seconds: number): string {
   const total = Math.max(0, Math.round(seconds));
   const mins = Math.floor(total / 60);
   const secs = total % 60;
@@ -229,9 +225,14 @@ export function parseFilenameMetadata(filename: string): {
   };
 }
 
-export async function analyzeMp3FileForHotCues(
+export async function analyzeAudioFile(
   file: File
-): Promise<{ analysis: AnalyzedAudioResult; rawBuffer: ArrayBuffer; fileExt: string; decodedOk: boolean }> {
+): Promise<{
+  metadata: AudioMetadataResult;
+  rawBuffer: ArrayBuffer;
+  fileExt: string;
+  decodedOk: boolean;
+}> {
   const rawBuffer = await file.arrayBuffer();
   const fileExt = getFileExtension(file.name);
   const { artistGuess, titleGuess } = parseFilenameMetadata(file.name);
@@ -242,12 +243,9 @@ export async function analyzeMp3FileForHotCues(
 
   if (!AudioCtx) {
     return {
-      analysis: {
-        cue1Seconds: 0.45,
-        cue2Seconds: 32.0,
+      metadata: {
         durationSeconds: 210,
         durationFormatted: '3:30',
-        peakRms: 0.25,
         artistGuess,
         titleGuess,
       },
@@ -259,19 +257,25 @@ export async function analyzeMp3FileForHotCues(
 
   const ctx = new AudioCtx();
   try {
-    // Pass a copy because decodeAudioData detaches the ArrayBuffer in browsers
     const bufferCopy = rawBuffer.slice(0);
     const audioBuffer = await ctx.decodeAudioData(bufferCopy);
-    const analysis = scanDecodedAudioBuffer(audioBuffer, file.name);
-    return { analysis, rawBuffer, fileExt, decodedOk: true };
+    const durationSeconds = Math.max(1, Math.round(audioBuffer.duration));
+    return {
+      metadata: {
+        durationSeconds,
+        durationFormatted: formatDuration(durationSeconds),
+        artistGuess,
+        titleGuess,
+      },
+      rawBuffer,
+      fileExt,
+      decodedOk: true,
+    };
   } catch {
     return {
-      analysis: {
-        cue1Seconds: 0.45,
-        cue2Seconds: 32.0,
+      metadata: {
         durationSeconds: 210,
         durationFormatted: '3:30',
-        peakRms: 0.25,
         artistGuess,
         titleGuess,
       },
@@ -283,145 +287,3 @@ export async function analyzeMp3FileForHotCues(
     void ctx.close();
   }
 }
-
-export function scanDecodedAudioBuffer(
-  audioBuffer: AudioBuffer,
-  filename: string
-): AnalyzedAudioResult {
-  const sampleRate = audioBuffer.sampleRate;
-  const length = audioBuffer.length;
-  const durationSeconds = audioBuffer.duration;
-  const ch0 = audioBuffer.getChannelData(0);
-  const ch1 = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : null;
-
-  // 1. Compute 20ms RMS windows for precise Cue 1 onset detection
-  const frameSamples = Math.max(1, Math.floor(sampleRate * 0.02));
-  const totalFrames = Math.floor(length / frameSamples);
-  const frameRms = new Float32Array(totalFrames);
-  let maxFrameRms = 0;
-
-  for (let f = 0; f < totalFrames; f++) {
-    const start = f * frameSamples;
-    let sumSq = 0;
-    for (let i = 0; i < frameSamples; i++) {
-      const idx = start + i;
-      const sample = ch1 ? (ch0[idx] + ch1[idx]) * 0.5 : ch0[idx];
-      sumSq += sample * sample;
-    }
-    const rms = Math.sqrt(sumSq / frameSamples);
-    frameRms[f] = rms;
-    if (rms > maxFrameRms) maxFrameRms = rms;
-  }
-
-  // Hot Cue 1 (Green #22C55E): First clean beat/percussion onset skipping intro silence
-  const onsetThreshold = Math.max(0.02, maxFrameRms * 0.22);
-  let cue1Frame = 0;
-  for (let f = 0; f < totalFrames - 2; f++) {
-    if (
-      frameRms[f] >= onsetThreshold &&
-      frameRms[f + 1] >= onsetThreshold * 0.85
-    ) {
-      cue1Frame = f;
-      break;
-    }
-  }
-  const cue1Seconds = Number((cue1Frame * 0.02).toFixed(2));
-
-  // 2. Compute 1.5s sliding energy windows (0.25s hop) for Cue 2 Drop / Peak Energy
-  const hopFrames = Math.max(1, Math.floor(0.25 / 0.02)); // 12 frames = 0.24s
-  const windowFrames = Math.max(1, Math.floor(1.5 / 0.02)); // 75 frames = 1.5s
-  const minDropTime =
-    durationSeconds > 20 ? Math.max(cue1Seconds + 6, durationSeconds * 0.18) : cue1Seconds + 1;
-  const minDropFrame = Math.min(
-    Math.max(0, totalFrames - windowFrames - 1),
-    Math.floor(minDropTime / 0.02)
-  );
-
-  let bestEnergy = -1;
-  let bestStartFrame = Math.max(cue1Frame, minDropFrame);
-
-  for (let f = Math.max(0, minDropFrame); f < totalFrames - windowFrames; f += hopFrames) {
-    let energySum = 0;
-    let localPeak = 0;
-    for (let k = 0; k < windowFrames; k++) {
-      const val = frameRms[f + k];
-      energySum += val * val;
-      if (val > localPeak) localPeak = val;
-    }
-    // Weight sustained loudness + transient impact
-    const score = energySum / windowFrames + localPeak * localPeak * 0.35;
-    if (score > bestEnergy) {
-      bestEnergy = score;
-      bestStartFrame = f;
-    }
-  }
-
-  const cue2Seconds = Number(
-    Math.min(
-      Math.max(cue1Seconds + 0.5, bestStartFrame * 0.02),
-      Math.max(0.5, durationSeconds - 0.5)
-    ).toFixed(2)
-  );
-
-  const { artistGuess, titleGuess } = parseFilenameMetadata(filename);
-
-  return {
-    cue1Seconds,
-    cue2Seconds,
-    durationSeconds,
-    durationFormatted: formatDuration(durationSeconds),
-    peakRms: Number(maxFrameRms.toFixed(4)),
-    artistGuess,
-    titleGuess,
-  };
-}
-
-// Lightweight audition player for uploaded audio buffers at Cue 1 / Cue 2 timestamps
-class CueAuditionPlayer {
-  private audioEl: HTMLAudioElement | null = null;
-  private objectUrl: string | null = null;
-  private stopTimer: number | null = null;
-
-  public stop(): void {
-    if (this.stopTimer !== null) {
-      window.clearTimeout(this.stopTimer);
-      this.stopTimer = null;
-    }
-    if (this.audioEl) {
-      this.audioEl.pause();
-      this.audioEl = null;
-    }
-    if (this.objectUrl) {
-      URL.revokeObjectURL(this.objectUrl);
-      this.objectUrl = null;
-    }
-  }
-
-  public playFromTimestamp(rawBuffer: ArrayBuffer, startSeconds: number, ext: string = 'mp3'): void {
-    this.stop();
-    const mime =
-      ext === 'wav'
-        ? 'audio/wav'
-        : ext === 'ogg'
-          ? 'audio/ogg'
-          : ext === 'm4a' || ext === 'aac'
-            ? 'audio/mp4'
-            : ext === 'flac'
-              ? 'audio/flac'
-              : 'audio/mpeg';
-    const blob = new Blob([rawBuffer], { type: mime });
-    const url = URL.createObjectURL(blob);
-    this.objectUrl = url;
-    const audio = new Audio(url);
-    this.audioEl = audio;
-    audio.addEventListener('loadedmetadata', () => {
-      audio.currentTime = Math.min(Math.max(0, startSeconds), Math.max(0, audio.duration - 0.5));
-      void audio.play();
-    });
-    this.stopTimer = window.setTimeout(() => {
-      this.stop();
-    }, 8000);
-  }
-}
-
-export const cueAuditionPlayer = new CueAuditionPlayer();

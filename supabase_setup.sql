@@ -438,3 +438,79 @@ end;
 $$;
 
 grant execute on function public.ingest_natcash_sms_webhook(text, text) to anon, authenticated;
+
+-- 11. STORAGE BUCKET FOR REAL MP3 AUDIO FILES ('music-packs')
+insert into storage.buckets (id, name, public)
+values ('music-packs', 'music-packs', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "Public Access music-packs" on storage.objects;
+create policy "Public Access music-packs"
+on storage.objects for select
+to public
+using (bucket_id = 'music-packs');
+
+drop policy if exists "Allow upload to music-packs" on storage.objects;
+create policy "Allow upload to music-packs"
+on storage.objects for insert
+to anon, authenticated
+with check (bucket_id = 'music-packs');
+
+drop policy if exists "Allow update on music-packs" on storage.objects;
+create policy "Allow update on music-packs"
+on storage.objects for update
+to anon, authenticated
+using (bucket_id = 'music-packs');
+
+drop policy if exists "Allow delete on music-packs" on storage.objects;
+create policy "Allow delete on music-packs"
+on storage.objects for delete
+to anon, authenticated
+using (bucket_id = 'music-packs');
+
+-- 12. MUSIC PACKS TABLE FOR REMOTE CATALOG PERSISTENCE
+create table if not exists public.music_packs (
+  id text primary key,
+  slug text not null,
+  title text not null,
+  filename text,
+  subtitle text not null,
+  genre text not null,
+  track_count integer not null default 0,
+  file_size text not null default '',
+  bitrate text not null default 'MP3 320kbps',
+  bpm_range text not null default '',
+  cover_image text not null,
+  tracks jsonb not null default '[]'::jsonb,
+  is_custom_upload boolean not null default true,
+  is_coming_soon boolean not null default false,
+  created_at bigint not null default (extract(epoch from now()) * 1000)::bigint,
+  updated_at bigint not null default (extract(epoch from now()) * 1000)::bigint
+);
+
+create index if not exists idx_music_packs_created_at on public.music_packs (created_at desc);
+
+alter table public.music_packs enable row level security;
+
+drop policy if exists "Allow anon select music_packs" on public.music_packs;
+drop policy if exists "Allow anon insert music_packs" on public.music_packs;
+drop policy if exists "Allow anon update music_packs" on public.music_packs;
+drop policy if exists "Allow anon delete music_packs" on public.music_packs;
+
+create policy "Allow anon select music_packs" on public.music_packs for select to anon, authenticated using (true);
+create policy "Allow anon insert music_packs" on public.music_packs for insert to anon, authenticated with check (true);
+create policy "Allow anon update music_packs" on public.music_packs for update to anon, authenticated using (true) with check (true);
+create policy "Allow anon delete music_packs" on public.music_packs for delete to anon, authenticated using (true);
+
+alter table public.music_packs replica identity full;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'music_packs'
+  ) then
+    alter publication supabase_realtime add table public.music_packs;
+  end if;
+end;
+$$;

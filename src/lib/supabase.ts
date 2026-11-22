@@ -97,3 +97,22 @@ export interface SupabasePackRequestRow {
   genre: string;
   created_at: number;
 }
+
+export interface SupabaseMusicPackRow {
+  id: string;
+  slug: string;
+  title: string;
+  filename: string | null;
+  subtitle: string;
+  genre: string;
+  track_count: number;
+  file_size: string;
+  bitrate: string;
+  bpm_range: string;
+  cover_image: string;
+  tracks: any;
+  is_custom_upload: boolean;
+  is_coming_soon: boolean;
+  created_at: number;
+  updated_at: number;
+}

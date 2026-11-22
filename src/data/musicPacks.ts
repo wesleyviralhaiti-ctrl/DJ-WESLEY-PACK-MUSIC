@@ -1,5 +1,6 @@
 import customDefaultFoldersJson from './customDefaultFolders.json';
 import { supabase, SupabaseVipKeyRow } from '../lib/supabase';
+import { hasUploadedMp3Buffer } from '../utils/audioAnalyzer';
 
 export interface TrackItem {
   number: number;
@@ -8,6 +9,10 @@ export interface TrackItem {
   bpm: number;
   duration: string;
   mixType: string;
+  audioUrl?: string;
+  fileUrl?: string;
+  storagePath?: string;
+  fileSizeBytes?: number;
 }
 
 export interface MusicPack {
@@ -25,172 +30,21 @@ export interface MusicPack {
   tracks: TrackItem[];
   isCustomUpload?: boolean;
   isComingSoon?: boolean;
-  colorConfig?: FolderColorConfig;
-  cuesConfig?: FolderCuesConfig;
 }
 
-export type FolderColorMode = 'rainbow' | 'solid';
-
-export interface DjColorPreset {
-  hex: string;
-  name: string;
-  label: string;
-}
-
-export interface FolderColorConfig {
-  packId: string;
-  mode: FolderColorMode;
-  solidColor: string;
-  trackColors: Record<number, string>;
-}
-
-export const DJ_RAINBOW_COLORS: DjColorPreset[] = [
-  { hex: '#EF4444', name: 'Red', label: 'Wouj (Rabòday)' },
-  { hex: '#3B82F6', name: 'Blue', label: 'Ble (Konpa)' },
-  { hex: '#22C55E', name: 'Green', label: 'Vèt (Afrobeat)' },
-  { hex: '#F59E0B', name: 'Gold', label: 'Lò (VIP Hits)' },
-  { hex: '#A855F7', name: 'Purple', label: 'Vyolèt (Drill)' },
-  { hex: '#06B6D4', name: 'Cyan', label: 'Syàn (Club)' },
-];
-
-export const FOLDER_COLORS_STORAGE_KEY = 'wesley_folder_color_configs_v1';
-
-const DEFAULT_SOLID_COLORS_BY_PACK: Record<string, { mode: FolderColorMode; hex: string }> = {
-  'konpa-gouyad-vip-2026': { mode: 'solid', hex: '#3B82F6' },
-  'raboday-kanaval-2026': { mode: 'solid', hex: '#EF4444' },
-  'rap-kreyol-trap-2026': { mode: 'solid', hex: '#A855F7' },
-  'afrobeat-amapiano-2026': { mode: 'solid', hex: '#22C55E' },
-  'konpa-love-douceur-vip': { mode: 'solid', hex: '#06B6D4' },
-  'raboday-rara-lajan': { mode: 'solid', hex: '#EF4444' },
-  'rap-kreyol-drill-vip': { mode: 'solid', hex: '#A855F7' },
-  'afrobeat-dancehall-fusion': { mode: 'solid', hex: '#22C55E' },
-  'konpa-classic-retro': { mode: 'solid', hex: '#F59E0B' },
-  'wesley-mega-club-transitions': { mode: 'rainbow', hex: '#F59E0B' },
-};
-
-export function loadAllFolderColorConfigs(): Record<string, FolderColorConfig> {
-  try {
-    const raw = window.localStorage.getItem(FOLDER_COLORS_STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as Record<string, FolderColorConfig>;
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return {};
+/**
+ * Returns true if a pack has real audio files attached
+ * (either remote public Supabase URLs or in-memory ArrayBuffers).
+ * Folders without real audio are strictly marked "An Preparasyon"
+ * to block fake 0-second / 00:00 corrupt downloads.
+ */
+export function packHasRealAudio(pack: MusicPack): boolean {
+  if (!pack || !Array.isArray(pack.tracks) || pack.tracks.length === 0) {
+    return false;
   }
-}
-
-export function getFolderColorConfig(packId: string): FolderColorConfig {
-  const all = loadAllFolderColorConfigs();
-  if (all[packId]) {
-    return all[packId];
-  }
-  const liveMatch = (customDefaultFoldersJson as MusicPack[]).find((p) => p.id === packId);
-  if (liveMatch?.colorConfig) {
-    return liveMatch.colorConfig;
-  }
-  const def = DEFAULT_SOLID_COLORS_BY_PACK[packId] ?? { mode: 'rainbow', hex: '#3B82F6' };
-  return {
-    packId,
-    mode: def.mode,
-    solidColor: def.hex,
-    trackColors: {},
-  };
-}
-
-export function saveFolderColorConfig(config: FolderColorConfig): void {
-  const all = loadAllFolderColorConfigs();
-  all[config.packId] = config;
-  window.localStorage.setItem(FOLDER_COLORS_STORAGE_KEY, JSON.stringify(all));
-}
-
-export function resolveTrackColor(
-  packId: string,
-  trackNumber: number,
-  configOverride?: FolderColorConfig
-): string {
-  const cfg = configOverride ?? getFolderColorConfig(packId);
-  const individual = cfg.trackColors?.[trackNumber];
-  if (individual) {
-    return individual.toUpperCase();
-  }
-  if (cfg.mode === 'rainbow') {
-    return DJ_RAINBOW_COLORS[(trackNumber - 1) % DJ_RAINBOW_COLORS.length].hex;
-  }
-  return (cfg.solidColor || '#3B82F6').toUpperCase();
-}
-
-export interface TrackHotCues {
-  cue1Seconds: number; // Green #22C55E - "1: KÒMANSMAN"
-  cue2Seconds: number; // Red #EF4444 - "2: PI GOU / DROP"
-  source?: 'auto-scan' | 'manual' | 'default';
-  customTitle?: string;
-  customArtist?: string;
-  customBpm?: number;
-  customDuration?: string;
-}
-
-export interface FolderCuesConfig {
-  packId: string;
-  tracks: Record<number, TrackHotCues>;
-}
-
-export const FOLDER_CUES_STORAGE_KEY = 'wesley_folder_hot_cues_v1';
-
-export function loadAllFolderCuesConfigs(): Record<string, FolderCuesConfig> {
-  try {
-    const raw = window.localStorage.getItem(FOLDER_CUES_STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as Record<string, FolderCuesConfig>;
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-export function getFolderCuesConfig(packId: string): FolderCuesConfig {
-  const all = loadAllFolderCuesConfigs();
-  if (all[packId]) {
-    return all[packId];
-  }
-  const liveMatch = (customDefaultFoldersJson as MusicPack[]).find((p) => p.id === packId);
-  if (liveMatch?.cuesConfig) {
-    return liveMatch.cuesConfig;
-  }
-  return {
-    packId,
-    tracks: {},
-  };
-}
-
-export function saveFolderCuesConfig(config: FolderCuesConfig): void {
-  const all = loadAllFolderCuesConfigs();
-  all[config.packId] = config;
-  window.localStorage.setItem(FOLDER_CUES_STORAGE_KEY, JSON.stringify(all));
-}
-
-export function computeDefaultHotCues(bpm: number, trackNumber: number): TrackHotCues {
-  const beatSec = 60 / Math.max(85, Math.min(160, bpm));
-  // Clean beat onset typically after 2–4 beats (skip intro silence), Drop at ~32–64 beats
-  const introBeats = 2 + (trackNumber % 3) * 2;
-  const dropBeats = 48 + (trackNumber % 4) * 16;
-  return {
-    cue1Seconds: Number((introBeats * beatSec).toFixed(2)),
-    cue2Seconds: Number((dropBeats * beatSec).toFixed(2)),
-    source: 'default',
-  };
-}
-
-export function resolveTrackHotCues(
-  packId: string,
-  track: TrackItem,
-  configOverride?: FolderCuesConfig
-): TrackHotCues {
-  const cfg = configOverride ?? getFolderCuesConfig(packId);
-  const saved = cfg.tracks?.[track.number];
-  if (saved) {
-    return saved;
-  }
-  return computeDefaultHotCues(track.bpm, track.number);
+  return pack.tracks.some(
+    (t) => Boolean(t.audioUrl || t.fileUrl) || hasUploadedMp3Buffer(pack.id, t.number)
+  );
 }
 
 export interface FolderPlan {
@@ -235,7 +89,7 @@ export const FOLDER_PLANS: FolderPlan[] = [
     description: 'Chwazi nenpòt 10 folder konplè (1,000 mizik) nan katalòg la pou w telechaje.',
     features: [
       '10 Kredi Folder (.ZIP) — 1,000 mizik an lòd',
-      'Kalite MP3 320kbps pare pou telefòn ak VirtualDJ',
+      'Kalite MP3 320kbps pare pou telefòn, machin ak sound system',
       'Livrezon Kle VIP otomatik touswit aprè peman',
     ],
   },
@@ -250,7 +104,7 @@ export const FOLDER_PLANS: FolderPlan[] = [
     features: [
       '21 Kredi Folder (.ZIP) — 2,100 mizik total',
       'Pa gen dat ekspirasyon tan: itilize kredi yo lè w vle',
-      'Koulè VirtualDJ + 2 Hot Cues pare',
+      'Fichye MP3 320kbps bon kalite pare pou jwe',
     ],
     recommended: true,
   },
@@ -287,11 +141,11 @@ export const FOLDER_PLANS: FolderPlan[] = [
     label: "👑 KLE VIP ILIMITE (♾️ Folder a L'Infini)",
     shortLabel: '👑 KLE VIP ILIMITE',
     subtitle: "♾️ Telechajman a L'Infini ak tout folder .ZIP yo",
-    description: "Aksè konplè a l'infini sou tout folder .ZIP yo + mizik VirtualDJ yo.",
+    description: "Aksè konplè a l'infini sou tout folder .ZIP yo.",
     features: [
       "Telechajman a L'Infini sou tout folder .ZIP yo",
-      'Koulè VirtualDJ + 2 Hot Cues pare sou tout pake yo',
       'Telechajman dirèk ak vitès maksimòm sou tout aparèy',
+      'Aksè priyoritè sou tout nouvo mizik k ap soti',
     ],
   },
 ];
@@ -1539,7 +1393,19 @@ export function loadCustomPacks(): MusicPack[] {
     const raw = window.localStorage.getItem(CUSTOM_PACKS_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as MusicPack[];
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    let modified = false;
+    const cleaned = parsed.map((p) => {
+      if (p.isComingSoon && p.tracks && p.tracks.length > 0) {
+        modified = true;
+        return { ...p, isComingSoon: false };
+      }
+      return p;
+    });
+    if (modified) {
+      saveCustomPacks(cleaned);
+    }
+    return cleaned;
   } catch {
     return [];
   }
@@ -1682,8 +1548,6 @@ export function exportCurrentFoldersJson(options?: {
     !hasPermanent && hasOwnerFolders && !includeDemos ? customPacks : visibleAll;
 
   const exportPayload = selectedPacks.map((pack) => {
-    const colorCfg = getFolderColorConfig(pack.id);
-    const cuesCfg = getFolderCuesConfig(pack.id);
     return {
       id: pack.id,
       slug: pack.slug,
@@ -1699,8 +1563,6 @@ export function exportCurrentFoldersJson(options?: {
       isComingSoon: Boolean(pack.isComingSoon),
       isCustomUpload: true,
       tracks: pack.tracks,
-      colorConfig: colorCfg,
-      ...(Object.keys(cuesCfg.tracks || {}).length > 0 ? { cuesConfig: cuesCfg } : {}),
     };
   });
 
@@ -1760,10 +1622,10 @@ export function activateComingSoonPack(
     subtitle: `${tracks.length} mizik an lòd (001–${String(tracks.length).padStart(
       3,
       '0'
-    )}) ak koulè VirtualDJ + 2 Hot Cues.`,
+    )}) pare pou telechaje.`,
     trackCount: tracks.length,
     fileSize: fileSizeLabel,
-    bitrate: 'Audio Original + ID3 Color',
+    bitrate: 'MP3 320kbps',
     bpmRange: 'Auto Scan',
     tracks,
     isCustomUpload: true,
@@ -1772,4 +1634,77 @@ export function activateComingSoonPack(
 
   upsertCustomPack(updatedPack);
   return updatedPack;
+}
+
+// ============================================================================
+// SUPABASE REALTIME & REMOTE STORAGE PERSISTENCE FOR `music_packs` TABLE
+// ============================================================================
+
+export async function fetchRemoteMusicPacks(): Promise<MusicPack[]> {
+  try {
+    const { data, error } = await supabase
+      .from('music_packs')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data || !Array.isArray(data)) {
+      return loadCustomPacks();
+    }
+
+    const mapped: MusicPack[] = data.map((row: any) => ({
+      id: String(row.id),
+      slug: String(row.slug),
+      title: String(row.title),
+      filename: row.filename || undefined,
+      subtitle: String(row.subtitle || ''),
+      genre: String(row.genre || 'Mizik VIP'),
+      trackCount: Number(row.track_count) || 0,
+      fileSize: String(row.file_size || '300 MB'),
+      bitrate: String(row.bitrate || 'MP3 320kbps'),
+      bpmRange: String(row.bpm_range || 'Auto Scan'),
+      coverImage: String(row.cover_image || '/src/assets/images/hero_studio_console_1795118961756.jpg'),
+      tracks: Array.isArray(row.tracks) ? row.tracks : [],
+      isCustomUpload: Boolean(row.is_custom_upload),
+      isComingSoon: Boolean(row.is_coming_soon),
+    }));
+
+    saveCustomPacks(mapped);
+    return mapped;
+  } catch {
+    return loadCustomPacks();
+  }
+}
+
+export async function upsertRemoteMusicPack(pack: MusicPack): Promise<void> {
+  upsertCustomPack(pack);
+  try {
+    await supabase.from('music_packs').upsert({
+      id: pack.id,
+      slug: pack.slug,
+      title: pack.title,
+      filename: pack.filename || formatZipFolderFilename(pack),
+      subtitle: pack.subtitle,
+      genre: pack.genre,
+      track_count: pack.trackCount,
+      file_size: pack.fileSize,
+      bitrate: pack.bitrate,
+      bpm_range: pack.bpmRange,
+      cover_image: pack.coverImage,
+      tracks: pack.tracks,
+      is_custom_upload: true,
+      is_coming_soon: Boolean(pack.isComingSoon),
+      updated_at: Date.now(),
+    });
+  } catch {
+    // Ignore network errors cleanly
+  }
+}
+
+export async function deleteRemoteMusicPack(packId: string): Promise<void> {
+  deletePackById(packId);
+  try {
+    await supabase.from('music_packs').delete().eq('id', packId);
+  } catch {
+    // Ignore network errors cleanly
+  }
 }
